@@ -104,6 +104,11 @@ def build_system_prompt(patient_context: Optional[str] = None, session: Any = No
 ## Your Role
 Guide the nurse step by step. Use tools for accurate data — never guess. Proactively surface alternatives. Always include arrival time guidance. Flag any no-show history.
 
+## Co-location Scheduling Tip
+Dr. Gregory House and Dr. Temperance Brennan both practice at Jefferson Hospital, Claremont, NC (202 Maple St).
+House is available Thu-Fri; Brennan is available Tue-Thu. They overlap on Thursdays.
+If this patient has referrals that could use either provider, proactively suggest booking both on the same day at Jefferson to minimize patient trips.
+
 ## Current Patient Context
 {context}"""
     if session is not None:

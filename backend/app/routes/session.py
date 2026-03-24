@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from ..session_store import store
+from ..logic.colocated_providers import find_colocated_providers
 
 router = APIRouter(prefix="/session", tags=["session"])
 
@@ -22,6 +23,26 @@ def get_session_by_patient(patient_id: int):
     if not session:
         raise HTTPException(status_code=404, detail="No session found for this patient")
     return {"session_id": session.session_id, "step": session.step, "bookings_count": len(session.bookings)}
+
+@router.get("/{session_id}/colocated-suggestions")
+def get_colocated_suggestions(session_id: str):
+    """Return co-location suggestions for providers involved in this session's referrals."""
+    session = store.get(session_id)
+    if not session or not session.patient:
+        return []
+
+    # Collect all provider names: from referrals + from confirmed bookings
+    provider_names = []
+    for ref in session.patient.get("referred_providers", []):
+        if ref.get("provider"):
+            provider_names.append(ref["provider"])
+    for booking in session.bookings:
+        provider_names.append(booking.provider_name)
+
+    if len(provider_names) < 2:
+        return []
+
+    return find_colocated_providers(provider_names)
 
 @router.delete("/{session_id}")
 def delete_session(session_id: str):

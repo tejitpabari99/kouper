@@ -29,4 +29,5 @@ export const api = {
   deleteSession: (sessionId) => request('DELETE', `/session/${sessionId}`),
   getDistance: (fromAddress, providerAddress) => request('GET', `/distance?from_address=${encodeURIComponent(fromAddress)}&provider_address=${encodeURIComponent(providerAddress)}`),
   sendSummary: (sessionId, method, contact) => request('POST', `/session/${sessionId}/send-summary`, { method, contact }),
+  getColocatedSuggestions: (sessionId) => request('GET', `/session/${sessionId}/colocated-suggestions`),
 };

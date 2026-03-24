@@ -8,12 +8,23 @@
   const sid = $page.params.id;
   let state = null;
   let error = '';
+  let colocatedSuggestions = [];
+  let colocatedDismissed = false;
 
   onMount(async () => {
     try {
       state = await api.getState(sid);
     } catch (e) {
       error = e.message;
+    }
+
+    // Check dismissed state from sessionStorage
+    colocatedDismissed = sessionStorage.getItem(`coloc_dismissed_${sid}`) === 'true';
+
+    try {
+      colocatedSuggestions = await api.getColocatedSuggestions(sid);
+    } catch (_) {
+      colocatedSuggestions = [];
     }
   });
 
@@ -28,6 +39,11 @@
   // B8: startOver navigates back to home
   function startOver() {
     goto('/');
+  }
+
+  function dismissColocated() {
+    colocatedDismissed = true;
+    sessionStorage.setItem(`coloc_dismissed_${sid}`, 'true');
   }
 
   $: referrals = state?.patient?.referred_providers || [];
@@ -77,6 +93,20 @@
       <p style="font-size:14px; color:#6b7280; margin-bottom:16px">
         Following hospital discharge, the following appointments need booking:
       </p>
+
+      {#if colocatedSuggestions.length > 0 && !colocatedDismissed}
+        {#each colocatedSuggestions as suggestion}
+          <div style="margin-bottom:16px; padding:14px 16px; background:#eef2ff; border:1px solid #c7d2fe; border-radius:8px; display:flex; align-items:flex-start; gap:12px">
+            <span style="font-size:18px; flex-shrink:0">💡</span>
+            <div style="flex:1">
+              <div style="font-weight:600; font-size:14px; color:#3730a3; margin-bottom:4px">Scheduling Tip — {suggestion.location_name}</div>
+              <div style="font-size:13px; color:#4338ca">{suggestion.message}</div>
+              <div style="font-size:12px; color:#6366f1; margin-top:4px">{suggestion.address}</div>
+            </div>
+            <button on:click={dismissColocated} style="background:none; border:none; color:#6366f1; cursor:pointer; font-size:16px; line-height:1; flex-shrink:0">&times;</button>
+          </div>
+        {/each}
+      {/if}
 
       <!-- B6: no-show warning ABOVE the referrals list -->
       {#if state.patient?.appointments?.some(a => a.status === 'noshow')}
