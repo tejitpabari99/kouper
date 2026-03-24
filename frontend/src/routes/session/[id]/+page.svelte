@@ -58,7 +58,7 @@
               </div>
             </div>
             <span class="badge" class:badge-grey={!bookedIndexes.has(idx)} class:badge-green={bookedIndexes.has(idx)}>
-              {bookedIndexes.has(idx) ? '&#10003; Booked' : 'Not Booked'}
+              {bookedIndexes.has(idx) ? '✓ Booked' : 'Not Booked'}
             </span>
           </div>
           {#if bookedIndexes.has(idx)}
