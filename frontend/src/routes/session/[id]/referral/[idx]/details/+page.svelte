@@ -149,7 +149,7 @@
           style="background:none; border:none; color:#3b82f6; font-size:13px; cursor:pointer; padding:0; text-decoration:underline"
           on:click={changeProvider}
         >
-          &#8592; Location not suitable? Change provider
+          ← Location not suitable? Change provider
         </button>
       </div>
     </div>
@@ -166,16 +166,16 @@
           style="background:none; border:none; color:#3b82f6; font-size:13px; cursor:pointer; padding:0; text-decoration:underline"
           on:click={changeProvider}
         >
-          &#8592; Location not suitable? Change provider
+          ← Location not suitable? Change provider
         </button>
       </div>
     </div>
   {/if}
 
   <div class="nav-row">
-    <button class="btn btn-secondary" on:click={goBack}>&#8592; Back</button>
+    <button class="btn btn-secondary" on:click={goBack}>← Back</button>
     <button class="btn btn-primary" on:click={proceed} disabled={!selectedLocation || apptLoading}>
-      Next &#8594; Patient Preferences
+      Next → Patient Preferences
     </button>
   </div>
 

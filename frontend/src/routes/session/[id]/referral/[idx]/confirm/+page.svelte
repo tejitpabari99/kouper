@@ -68,7 +68,7 @@
     <div class="detail-row"><span class="label">Location</span><span class="value">{location}</span></div>
 
     <div class="info-row" style="margin-top:12px">
-      &#8505;&#65039; The assistant has determined the appointment type (NEW/ESTABLISHED) and arrival time based on the patient's history. Review the details screen if needed.
+      ℹ️ The assistant has determined the appointment type (NEW/ESTABLISHED) and arrival time based on the patient's history. Review the details screen if needed.
     </div>
   </div>
 
@@ -79,13 +79,13 @@
       <div class="detail-row"><span class="label">Best Time</span><span class="value">{prefs.best_contact_time}</span></div>
       <div class="detail-row"><span class="label">Language</span><span class="value">{prefs.language}</span></div>
       {#if prefs.transportation_needs}
-        <div class="warning-row" style="margin-top:8px">&#9888;&#65039; Transportation assistance needed &mdash; flag for care coordinator.</div>
+        <div class="warning-row" style="margin-top:8px">⚠️ Transportation assistance needed &mdash; flag for care coordinator.</div>
       {/if}
     </div>
   {/if}
 
   <div class="nav-row">
-    <button class="btn btn-secondary" on:click={goBack}>&#8592; Edit</button>
+    <button class="btn btn-secondary" on:click={goBack}>← Edit</button>
     <button class="btn btn-success" on:click={confirmBooking} disabled={confirming}>
       {confirming ? 'Confirming...' : '\u2713 Confirm Booking'}
     </button>

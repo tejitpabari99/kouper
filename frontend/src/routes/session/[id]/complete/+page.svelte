@@ -47,15 +47,15 @@
             <span class="badge badge-blue">{booking.appointment_type}</span>
           </div>
           <div style="font-size:13px; color:#374151">
-            &#128205; {booking.location}
-            {#if booking.provider_hours} &nbsp;&middot;&nbsp; &#128336; {booking.provider_hours}{/if}
+            📍 {booking.location}
+            {#if booking.provider_hours} &nbsp;&middot;&nbsp; 🕐 {booking.provider_hours}{/if}
           </div>
           <div style="font-size:13px; color:#374151; margin-top:4px">
-            &#9200; Arrive <strong>{booking.arrival_minutes_early} minutes early</strong>
+            ⏰ Arrive <strong>{booking.arrival_minutes_early} minutes early</strong>
             &nbsp;&middot;&nbsp; Appointment: <strong>{booking.duration_minutes} min</strong>
           </div>
           {#if booking.provider_phone}
-            <div style="font-size:13px; color:#6b7280; margin-top:4px">&#128222; {booking.provider_phone}</div>
+            <div style="font-size:13px; color:#6b7280; margin-top:4px">📞 {booking.provider_phone}</div>
           {/if}
         </div>
       {/each}
@@ -69,13 +69,13 @@
           &nbsp;&middot;&nbsp; Best time: <strong>{summary.preferences.best_contact_time}</strong>
         </div>
         {#if summary.preferences.transportation_needs}
-          <div class="warning-row" style="margin-top:10px">&#9888;&#65039; Transportation assistance required &mdash; care coordinator follow-up needed.</div>
+          <div class="warning-row" style="margin-top:10px">⚠️ Transportation assistance required &mdash; care coordinator follow-up needed.</div>
         {/if}
       </div>
     {/if}
 
     <div class="nav-row">
-      <button class="btn btn-secondary" on:click={printSummary}>&#128424;&#65039; Print Summary</button>
+      <button class="btn btn-secondary" on:click={printSummary}>🖨️ Print Summary</button>
       <button class="btn btn-primary" on:click={startNew}>Start New Session</button>
     </div>
   {:else if !error}

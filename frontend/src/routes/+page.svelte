@@ -154,7 +154,7 @@
       </div>
 
       <div class="info-row" style="margin-top:12px">
-        &#8505;&#65039; Please confirm patient identity verbally before proceeding.
+        ℹ️ Please confirm patient identity verbally before proceeding.
       </div>
     {/if}
   </div>
@@ -162,7 +162,7 @@
   {#if loadedPatient}
     <div class="nav-row">
       <div></div>
-      <button class="btn btn-primary" on:click={proceed}>Continue to Referrals &#8594;</button>
+      <button class="btn btn-primary" on:click={proceed}>Continue to Referrals →</button>
     </div>
   {/if}
 </div>

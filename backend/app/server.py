@@ -18,6 +18,7 @@ app.add_middleware(
 
 app.include_router(session.router)
 app.include_router(patient.router)
+app.include_router(patient.router2)
 app.include_router(chat.router)
 app.include_router(preferences.router)
 app.include_router(booking.router)

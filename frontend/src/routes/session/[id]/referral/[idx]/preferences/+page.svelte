@@ -122,7 +122,7 @@
 
     {#if transportationNeeds}
       <div class="warning-row">
-        &#9888;&#65039; Patient needs transportation. Flag for care coordinator to arrange assistance.
+        ⚠️ Patient needs transportation. Flag for care coordinator to arrange assistance.
       </div>
     {/if}
 
@@ -133,7 +133,7 @@
   </div>
 
   <div class="nav-row">
-    <button class="btn btn-secondary" on:click={goBack}>&#8592; Back</button>
+    <button class="btn btn-secondary" on:click={goBack}>← Back</button>
     <button class="btn btn-primary" on:click={proceed} disabled={saving}>
       {saving ? 'Saving...' : 'Next \u2192 Review Booking'}
     </button>

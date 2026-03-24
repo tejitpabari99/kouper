@@ -70,7 +70,7 @@
             {/if}
           {:else}
             <button class="btn btn-primary" on:click={() => bookReferral(idx)}>
-              Book This &#8594;
+              Book This →
             </button>
           {/if}
         </div>
@@ -79,14 +79,14 @@
 
     {#if state.patient?.appointments?.some(a => a.status === 'noshow')}
       <div class="warning-row">
-        &#9888;&#65039; Note: This patient has a previous no-show on record. Consider confirming transportation needs.
+        ⚠️ Note: This patient has a previous no-show on record. Consider confirming transportation needs.
       </div>
     {/if}
 
     {#if allBooked}
       <div class="nav-row">
         <div></div>
-        <button class="btn btn-success" on:click={finishSession}>Complete Session &#8594;</button>
+        <button class="btn btn-success" on:click={finishSession}>Complete Session →</button>
       </div>
     {/if}
   {:else if !error}
