@@ -24,7 +24,10 @@ def confirm_booking(session_id: str, body: ConfirmBookingRequest):
         raise HTTPException(status_code=400, detail="No patient loaded")
 
     # Get availability for this provider to find location details
-    avail = check_availability(body.provider_name)
+    try:
+        avail = check_availability(body.provider_name)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     location = next((loc for loc in avail.locations if loc.department_name == body.location_name), None)
 
     # Determine appointment type
