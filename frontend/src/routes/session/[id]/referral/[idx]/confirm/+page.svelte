@@ -1,6 +1,7 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
   import ChatPanel from '$lib/components/ChatPanel.svelte';
@@ -110,7 +111,7 @@
   }
 
   function continueToOverview() {
-    goto(`/session/${sid}`);
+    goto(`${base}/session/${sid}`);
   }
 
   $: chatContext = [
@@ -274,8 +275,8 @@
   {:else}
     <div class="nav-row">
       <div style="display:flex; flex-direction:column; gap:6px">
-        <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Location</button>
-        <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Preferences</button>
+        <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`${base}/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Location</button>
+        <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`${base}/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Preferences</button>
       </div>
       <button class="btn btn-success" on:click={confirmBooking} disabled={confirming || (insuranceInfo?.accepted === false && !insuranceAcknowledged)}>
         {confirming ? 'Confirming...' : '✓ Confirm Booking'}

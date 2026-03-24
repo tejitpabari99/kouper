@@ -1,6 +1,7 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
   import ChatPanel from '$lib/components/ChatPanel.svelte';
@@ -32,19 +33,19 @@
 
   function bookReferral(idx) {
     if (!state?.insurance) {
-      goto(`/session/${sid}/insurance?next=${idx}`);
+      goto(`${base}/session/${sid}/insurance?next=${idx}`);
     } else {
-      goto(`/session/${sid}/referral/${idx}/provider`);
+      goto(`${base}/session/${sid}/referral/${idx}/provider`);
     }
   }
 
   function finishSession() {
-    goto(`/session/${sid}/complete`);
+    goto(`${base}/session/${sid}/complete`);
   }
 
   // B8: startOver navigates back to home
   function startOver() {
-    goto('/');
+    goto(base + '/');
   }
 
   function dismissColocated() {
@@ -87,7 +88,7 @@
             </span>
             <button
               style="background:none; border:none; color:#9ca3af; font-size:11px; cursor:pointer; text-decoration:underline; padding:0; margin-left:4px"
-              on:click={() => goto(`/session/${sid}/insurance?next=0`)}
+              on:click={() => goto(`${base}/session/${sid}/insurance?next=0`)}
             >edit</button>
           {:else}
             &nbsp;·&nbsp; <span style="color:#dc2626; font-size:12px; font-weight:600">Insurance not set</span>

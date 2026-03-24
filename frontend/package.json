@@ -21,6 +21,7 @@
     "vitest": "^4.1.1"
   },
   "dependencies": {
+    "@sveltejs/adapter-node": "^5.5.4",
     "marked": "^17.0.5"
   }
 }

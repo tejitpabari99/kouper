@@ -1,6 +1,7 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
 
@@ -46,7 +47,7 @@
     error = '';
     try {
       await api.setInsurance(sid, value);
-      goto(`/session/${sid}/referral/${next}/provider`);
+      goto(`${base}/session/${sid}/referral/${next}/provider`);
     } catch (e) {
       error = e.message;
       saving = false;
@@ -60,7 +61,7 @@
       <div class="screen-title">Step 2.5 — Insurance</div>
       <div class="screen-subtitle">Patient's insurance plan</div>
     </div>
-    <button class="btn btn-secondary" style="font-size:13px; margin-top:4px" on:click={() => goto(`/session/${sid}`)}>← Back</button>
+    <button class="btn btn-secondary" style="font-size:13px; margin-top:4px" on:click={() => goto(`${base}/session/${sid}`)}>← Back</button>
   </div>
 
   {#if error}<div class="error-msg">{error}</div>{/if}

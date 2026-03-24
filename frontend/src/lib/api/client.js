@@ -1,4 +1,5 @@
-const BASE_URL = '/api';
+import { PUBLIC_API_BASE } from '$env/static/public';
+const BASE_URL = PUBLIC_API_BASE || '/api';
 
 async function request(method, path, body = null) {
   const opts = {

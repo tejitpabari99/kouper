@@ -1,5 +1,6 @@
 <script>
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { api } from '$lib/api/client.js';
 
   const SPECIALTIES = ['Primary Care', 'Orthopedics', 'Surgery', 'Cardiology', 'Neurology', 'Dermatology', 'Other'];
@@ -52,7 +53,7 @@
         await api.setInsurance(session.session_id, insurance);
       }
 
-      goto(`/session/${session.session_id}`);
+      goto(`${base}/session/${session.session_id}`);
     } catch (e) {
       error = e.message;
       saving = false;
@@ -66,7 +67,7 @@
       <div class="screen-title">New Patient</div>
       <div class="screen-subtitle">Register and begin referral session</div>
     </div>
-    <button class="btn btn-secondary" style="font-size:13px; margin-top:4px" on:click={() => goto('/')}>← Back</button>
+    <button class="btn btn-secondary" style="font-size:13px; margin-top:4px" on:click={() => goto(base + '/')}>← Back</button>
   </div>
 
   {#if error}<div class="error-msg">{error}</div>{/if}
