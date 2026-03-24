@@ -46,6 +46,9 @@ def confirm_booking(session_id: str, body: ConfirmBookingRequest):
         provider_address=location.address if location else None,
         provider_hours=location.hours if location else None,
     )
+    # Remove existing booking for this referral index if present
+    session.bookings = [b for b in session.bookings if b.referral_index != body.referral_index]
+    # Then append the new booking
     session.bookings.append(booking)
 
     # Check if all referrals are booked

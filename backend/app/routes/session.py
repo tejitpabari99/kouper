@@ -22,3 +22,10 @@ def get_session_by_patient(patient_id: int):
     if not session:
         raise HTTPException(status_code=404, detail="No session found for this patient")
     return {"session_id": session.session_id, "step": session.step, "bookings_count": len(session.bookings)}
+
+@router.delete("/{session_id}")
+def delete_session(session_id: str):
+    deleted = store.delete(session_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"deleted": True, "session_id": session_id}

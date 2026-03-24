@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import session, patient, chat, preferences, booking, appointment_info, providers
+from .routes import session, patient, chat, preferences, booking, appointment_info, providers, distance, send_summary
 
 app = FastAPI(
     title="Kouper Health Care Coordinator API",
@@ -24,6 +24,8 @@ app.include_router(preferences.router)
 app.include_router(booking.router)
 app.include_router(appointment_info.router)
 app.include_router(providers.router)
+app.include_router(distance.router)
+app.include_router(send_summary.router)
 
 @app.get("/health")
 def health():
