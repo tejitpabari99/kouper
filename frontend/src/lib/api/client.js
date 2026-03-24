@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.DEV ? '/api' : '/kouper/api';
+const BASE_URL = '/api';
 
 async function request(method, path, body = null) {
   const opts = {

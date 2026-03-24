@@ -1,7 +1,6 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
   import ChatPanel from '$lib/components/ChatPanel.svelte';
@@ -69,7 +68,7 @@
       });
       const confirmParams = new URLSearchParams({ provider: providerName, location, specialty });
       if (scheduledDatetime) confirmParams.set('scheduled_datetime', scheduledDatetime);
-      goto(`${base}/session/${sid}/referral/${idx}/confirm?${confirmParams}`);
+      goto(`/session/${sid}/referral/${idx}/confirm?${confirmParams}`);
     } catch (e) {
       error = e.message;
     } finally {
@@ -80,7 +79,7 @@
   function goBack() {
     const params = new URLSearchParams({ provider: providerName, location, specialty });
     if (scheduledDatetime) params.set('scheduled_datetime', scheduledDatetime);
-    goto(`${base}/session/${sid}/referral/${idx}/schedule?${params}`);
+    goto(`/session/${sid}/referral/${idx}/schedule?${params}`);
   }
 
   $: chatContext = [

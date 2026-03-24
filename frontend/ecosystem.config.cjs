@@ -6,8 +6,6 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: '3002',
-      ORIGIN: 'http://cc.tejitpabari.com',
-      KOUPER_BASE: '/kouper',
     }
   }]
 }

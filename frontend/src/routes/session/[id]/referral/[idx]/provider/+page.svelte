@@ -1,7 +1,6 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
   import ChatPanel from '$lib/components/ChatPanel.svelte';
@@ -117,7 +116,7 @@
     try {
       const info = await api.getAppointmentInfo(sid, selectedProvider, specialty);
       sessionStorage.setItem(`appointment_info_${sid}_${idx}`, JSON.stringify(info));
-      goto(`${base}/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(selectedProvider)}&specialty=${encodeURIComponent(specialty)}`);
+      goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(selectedProvider)}&specialty=${encodeURIComponent(specialty)}`);
     } catch (e) {
       const msg = e.message || '';
       if (msg.includes('404') || msg.toLowerCase().includes('not found')) {
@@ -252,7 +251,7 @@
     {/if}
 
     <div class="nav-row">
-      <button class="btn btn-secondary" on:click={() => goto(`${base}/session/${sid}`)}>← Back</button>
+      <button class="btn btn-secondary" on:click={() => goto(`/session/${sid}`)}>← Back</button>
       <button
         class="btn btn-primary"
         on:click={continueToDetails}

@@ -1,6 +1,5 @@
 <script>
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
 
@@ -72,7 +71,7 @@
       <div class="screen-title">Audit Log</div>
       <div class="screen-subtitle">All interactions — nurse, API, LLM, system</div>
     </div>
-    <button class="btn btn-secondary" style="font-size:13px; margin-top:4px" on:click={() => goto(base + '/')}>← Back</button>
+    <button class="btn btn-secondary" style="font-size:13px; margin-top:4px" on:click={() => goto('/')}>← Back</button>
   </div>
 
   <!-- Type filter tabs -->

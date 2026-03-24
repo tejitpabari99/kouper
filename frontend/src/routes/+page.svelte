@@ -1,6 +1,5 @@
 <script>
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
   import { api } from '$lib/api/client.js';
   import { sessionId, patient } from '$lib/stores/session.js';
 
@@ -86,7 +85,7 @@
       const p = await api.startSession(createdSessionId, selectedPatient.id);
       loadedPatient = p;
       patient.set(p);
-      goto(`${base}/session/${createdSessionId}`);
+      goto(`/session/${createdSessionId}`);
     } catch (e) {
       error = e.message;
     } finally {
@@ -95,7 +94,7 @@
   }
 
   function continueExisting() {
-    goto(`${base}/session/${existingSession.session_id}`);
+    goto(`/session/${existingSession.session_id}`);
   }
 
   function openNewSessionModal() {
@@ -141,11 +140,11 @@
     </div>
     <div style="display:flex; gap:8px; align-items:center; margin-top:6px">
       <a
-        href="{base}/audit"
+        href="/audit"
         style="font-size:12px; color:#6b7280; text-decoration:none; display:flex; align-items:center; gap:4px; padding:4px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb"
       >📋 Audit Log</a>
       <a
-        href="{base}/patient/new"
+        href="/patient/new"
         style="font-size:12px; color:#2563eb; text-decoration:none; display:flex; align-items:center; gap:4px; padding:4px 10px; border:1px solid #bfdbfe; border-radius:6px; background:#eff6ff; font-weight:600"
       >+ New Patient</a>
     </div>

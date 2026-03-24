@@ -1,6 +1,5 @@
 <script>
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client.js';
 
@@ -12,7 +11,7 @@
   async function confirmDelete() {
     deleting = true;
     try { await api.deleteSession(sid); } catch(_) {}
-    goto(base + '/');
+    goto('/');
   }
 </script>
 

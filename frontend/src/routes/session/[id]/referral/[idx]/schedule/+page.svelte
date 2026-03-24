@@ -1,7 +1,6 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
   import ChatPanel from '$lib/components/ChatPanel.svelte';
@@ -73,11 +72,11 @@
       specialty,
       scheduled_datetime: selectedSlot.date + 'T' + selectedSlot.start_time + ':00',
     });
-    goto(`${base}/session/${sid}/referral/${idx}/preferences?${params}`);
+    goto(`/session/${sid}/referral/${idx}/preferences?${params}`);
   }
 
   function goBack() {
-    goto(`${base}/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}&specialty=${encodeURIComponent(specialty)}`);
+    goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}&specialty=${encodeURIComponent(specialty)}`);
   }
 
   $: chatContext = [

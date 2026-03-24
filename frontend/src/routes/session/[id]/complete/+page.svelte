@@ -1,7 +1,6 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
 
@@ -82,7 +81,7 @@
   });
 
   function startNew() {
-    goto(base + '/');
+    goto('/');
   }
 
   function printSummary() {
