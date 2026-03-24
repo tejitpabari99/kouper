@@ -16,6 +16,7 @@
   let filterText = '';
   let navError = '';
   let navigating = false;
+  let patientInsurance = '';
 
   onMount(async () => {
     try {
@@ -25,6 +26,8 @@
       providersLoading = false;
       return;
     }
+
+    patientInsurance = state?.patient?.insurance || '';
 
     const ref = state?.patient?.referred_providers?.[idx];
     const spec = ref?.specialty || '';
@@ -97,6 +100,15 @@
     }).join(' · ');
   }
 
+  function insuranceBadge(p) {
+    if (!patientInsurance || patientInsurance.toLowerCase() === 'self-pay') return null;
+    const accepted = (p.accepted_insurances || []).some(ins =>
+      ins.toLowerCase().includes(patientInsurance.toLowerCase()) ||
+      patientInsurance.toLowerCase().includes(ins.toLowerCase())
+    );
+    return accepted ? 'covered' : 'not-covered';
+  }
+
   async function continueToDetails() {
     if (!selectedProvider || navigating) return;
     navigating = true;
@@ -140,6 +152,9 @@
     <div class="screen-title">Step 3 of 7 — Referral {idx + 1}</div>
     <div class="screen-subtitle">Provider Selection</div>
     {#if specialty}<div style="color:#6b7280; font-size:14px; margin-top:4px">Specialty: {specialty}</div>{/if}
+    {#if patientInsurance}
+      <div style="font-size:13px; color:#6b7280; margin-top:2px">Patient insurance: <strong>{patientInsurance}</strong></div>
+    {/if}
   </div>
 
   {#if error}
@@ -208,6 +223,15 @@
                     <span class="badge-referred">Referred by chart</span>
                   {:else if isSelected}
                     <span class="badge-selected">✓ Selected</span>
+                  {/if}
+                  {@const badge = insuranceBadge(p)}
+                  {#if badge === 'covered'}
+                    <span style="font-size:11px; background:#dcfce7; color:#16a34a; padding:2px 8px; border-radius:9999px; font-weight:600">✓ Covered</span>
+                  {:else if badge === 'not-covered'}
+                    <span style="font-size:11px; background:#fee2e2; color:#dc2626; padding:2px 8px; border-radius:9999px; font-weight:600">✗ Out of Network</span>
+                  {/if}
+                  {#if !p.accepting_new_patients}
+                    <span style="font-size:11px; background:#fff7ed; color:#c2410c; padding:2px 8px; border-radius:9999px; font-weight:600">{p.waitlist_available ? 'Waitlist Only' : 'Not Accepting'}</span>
                   {/if}
                 </div>
               </div>

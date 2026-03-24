@@ -123,6 +123,11 @@
             <div>
               <div class="provider-name">
                 Referral {idx + 1} &mdash; {referral.specialty}
+                {#if referral.urgency === 'urgent' || referral.urgency === 'stat'}
+                  <span style="display:inline-block; padding:2px 8px; background:{referral.urgency === 'stat' ? '#fef2f2' : '#fff7ed'}; color:{referral.urgency === 'stat' ? '#dc2626' : '#c2410c'}; border-radius:9999px; font-size:11px; font-weight:700; text-transform:uppercase; margin-left:6px">
+                    {referral.urgency === 'stat' ? '🚨 STAT' : '⚡ URGENT'}
+                  </span>
+                {/if}
               </div>
               <div class="provider-specialty">
                 {referral.provider || 'Provider TBD'}

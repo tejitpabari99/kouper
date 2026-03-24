@@ -15,6 +15,9 @@ class Provider(BaseModel):
     certification: str
     specialty: str
     departments: List[Department]
+    accepted_insurances: List[str] = []
+    accepting_new_patients: bool = True
+    waitlist_available: bool = False
 
     @property
     def full_name(self) -> str:

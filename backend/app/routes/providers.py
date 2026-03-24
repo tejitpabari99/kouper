@@ -43,6 +43,9 @@ def list_providers(
             "name": provider.full_name,
             "specialty": provider.specialty,
             "locations": locations,
+            "accepted_insurances": provider.accepted_insurances,
+            "accepting_new_patients": provider.accepting_new_patients,
+            "waitlist_available": provider.waitlist_available,
         })
 
     return results

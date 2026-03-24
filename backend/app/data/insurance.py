@@ -11,3 +11,10 @@ SELF_PAY_RATES = {
     "Orthopedics": 300.0,
     "Surgery": 1000.0,
 }
+
+PRIOR_AUTH_REQUIRED = {
+    ("Surgery", "Cigna"): True,
+    ("Surgery", "United Health Care"): True,
+    ("Orthopedics", "Aetna"): True,
+    ("Orthopedics", "United Health Care"): True,
+}

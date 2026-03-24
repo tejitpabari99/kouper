@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 
 class Appointment(BaseModel):
@@ -12,6 +12,8 @@ class Appointment(BaseModel):
 class ReferredProvider(BaseModel):
     provider: Optional[str] = None   # None means "unnamed" - just specialty given
     specialty: str
+    urgency: Literal["routine", "urgent", "stat"] = "routine"
+    priority_note: Optional[str] = None
 
 
 class PatientData(BaseModel):
@@ -22,3 +24,4 @@ class PatientData(BaseModel):
     ehrId: str
     referred_providers: List[ReferredProvider]
     appointments: List[Appointment]
+    insurance: Optional[str] = None

@@ -7,6 +7,8 @@ PROVIDERS: List[Provider] = [
         first_name="Meredith",
         certification="MD",
         specialty="Primary Care",
+        accepted_insurances=["Medicaid", "United Health Care", "Blue Cross Blue Shield of North Carolina", "Aetna", "Cigna", "Blue Cross Blue Shield"],
+        accepting_new_patients=True,
         departments=[
             Department(
                 name="Sloan Primary Care",
@@ -21,6 +23,8 @@ PROVIDERS: List[Provider] = [
         first_name="Gregory",
         certification="MD",
         specialty="Orthopedics",
+        accepted_insurances=["Blue Cross Blue Shield of North Carolina", "Blue Cross Blue Shield", "Aetna", "United Health Care"],
+        accepting_new_patients=True,
         departments=[
             Department(
                 name="PPTH Orthopedics",
@@ -41,6 +45,9 @@ PROVIDERS: List[Provider] = [
         first_name="Cristina",
         certification="MD",
         specialty="Surgery",
+        accepted_insurances=["Medicaid", "Aetna", "Cigna"],
+        accepting_new_patients=False,
+        waitlist_available=True,
         departments=[
             Department(
                 name="Seattle Grace Cardiac Surgery",
@@ -55,6 +62,8 @@ PROVIDERS: List[Provider] = [
         first_name="Chris",
         certification="FNP",
         specialty="Primary Care",
+        accepted_insurances=["Medicaid", "United Health Care", "Blue Cross Blue Shield of North Carolina", "Blue Cross Blue Shield"],
+        accepting_new_patients=True,
         departments=[
             Department(
                 name="Sacred Heart Surgical Department",
@@ -69,6 +78,8 @@ PROVIDERS: List[Provider] = [
         first_name="Temperance",
         certification="PhD, MD",
         specialty="Orthopedics",
+        accepted_insurances=["Aetna", "Cigna", "United Health Care"],
+        accepting_new_patients=True,
         departments=[
             Department(
                 name="Jefferson Hospital",

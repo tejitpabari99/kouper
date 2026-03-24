@@ -17,6 +17,8 @@
   let patientAddress = '';
   let distanceResult = null;
   let distanceLoading = false;
+  let insuranceInfo = null;
+  let insuranceLoading = false;
 
   $: providerName = $page.url.searchParams.get('provider') || '';
   $: specialtyParam = $page.url.searchParams.get('specialty') || '';
@@ -38,6 +40,7 @@
         apptInfo = JSON.parse(cached);
         apptLoading = false;
         autoSelectLocation();
+        await loadInsuranceInfo();
         return;
       } catch (_) {
         // Malformed cache — fall through to API call
@@ -56,11 +59,24 @@
     }
     apptLoading = false;
     autoSelectLocation();
+    await loadInsuranceInfo();
   });
 
   function autoSelectLocation() {
     if (apptInfo?.locations?.length === 1) {
       selectedLocation = apptInfo.locations[0].name;
+    }
+  }
+
+  async function loadInsuranceInfo() {
+    if (!providerName || !specialty) return;
+    insuranceLoading = true;
+    try {
+      insuranceInfo = await api.checkInsurance(sid, providerName, specialty);
+    } catch (_) {
+      insuranceInfo = null;
+    } finally {
+      insuranceLoading = false;
     }
   }
 
@@ -154,6 +170,44 @@
       {#if apptInfo.reason}
         <div style="font-size:13px; color:#374151; padding-top:8px; border-top:1px solid #e5e7eb">
           <span style="font-weight:600">Reason:</span> {apptInfo.reason}
+        </div>
+      {/if}
+    </div>
+  {/if}
+
+  {#if insuranceInfo}
+    <div class="card" style="border-left:4px solid {insuranceInfo.accepted === false ? '#ef4444' : insuranceInfo.prior_auth_required ? '#f59e0b' : '#16a34a'}">
+      <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:8px">Insurance Status</div>
+      {#if insuranceInfo.accepted === true}
+        <div style="color:#16a34a; font-size:14px; font-weight:600; margin-bottom:4px">✓ {insuranceInfo.patient_insurance} accepted</div>
+        {#if insuranceInfo.prior_auth_required}
+          <div style="padding:8px 12px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; font-size:13px; color:#92400e; margin-top:8px">
+            ⚠ Prior authorization may be required. Contact {insuranceInfo.patient_insurance} before the appointment date.
+          </div>
+        {/if}
+      {:else if insuranceInfo.accepted === false}
+        <div style="color:#dc2626; font-size:14px; font-weight:600; margin-bottom:6px">✗ {insuranceInfo.patient_insurance} not accepted at this provider</div>
+        {#if insuranceInfo.self_pay_rate}
+          <div style="font-size:13px; color:#374151; margin-bottom:8px">Estimated self-pay rate: <strong>${insuranceInfo.self_pay_rate}/visit</strong></div>
+        {/if}
+        {#if insuranceInfo.patient_script}
+          <div style="padding:10px 12px; background:#fef2f2; border-radius:6px; font-size:13px; color:#991b1b; margin-bottom:8px">
+            <div style="font-weight:600; margin-bottom:4px">Script for patient:</div>
+            "{insuranceInfo.patient_script}"
+          </div>
+        {/if}
+        {#if insuranceInfo.alternatives?.length}
+          <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:4px">Covered alternatives:</div>
+          {#each insuranceInfo.alternatives as alt}
+            <div style="font-size:13px; color:#374151; padding:6px 10px; background:#f9fafb; border-radius:6px; margin-bottom:4px">
+              {alt.name} · {alt.location}
+              {#if !alt.accepting_new_patients}<span style="font-size:11px; color:#9ca3af"> (not accepting new patients)</span>{/if}
+            </div>
+          {/each}
+        {/if}
+      {:else if insuranceInfo.self_pay}
+        <div style="font-size:13px; color:#6b7280">Patient is self-pay.
+          {#if insuranceInfo.self_pay_rate}Estimated rate: <strong>${insuranceInfo.self_pay_rate}/visit</strong>{/if}
         </div>
       {/if}
     </div>

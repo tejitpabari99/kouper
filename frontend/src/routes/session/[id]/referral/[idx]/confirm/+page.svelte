@@ -19,6 +19,8 @@
   let apptInfo = null;
   let scriptOpen = true;
   let nurseNotes = '';
+  let insuranceInfo = null;
+  let insuranceAcknowledged = false;
 
   // Post-booking feedback
   let bookingConfirmed = false;
@@ -27,6 +29,13 @@
   let feedbackSubmitting = false;
   let feedbackSubmitted = false;
   let feedbackNote = '';
+
+  async function loadInsuranceForConfirm() {
+    if (!providerName || !specialty) return;
+    try {
+      insuranceInfo = await api.checkInsurance(sid, providerName, specialty);
+    } catch (_) {}
+  }
 
   onMount(async () => {
     try {
@@ -49,6 +58,7 @@
         try { apptInfo = await api.getAppointmentInfo(sid, prov, spec); } catch(_) {}
       }
     }
+    await loadInsuranceForConfirm();
   });
 
   $: prefs = state?.patient_preferences;
@@ -56,6 +66,11 @@
   async function confirmBooking() {
     confirming = true;
     error = '';
+    if (insuranceInfo?.accepted === false && !insuranceAcknowledged) {
+      error = 'Please confirm the patient has been informed of the self-pay rate before proceeding.';
+      confirming = false;
+      return;
+    }
     try {
       await api.confirmBooking(sid, {
         referral_index: idx,
@@ -192,6 +207,19 @@
     </div>
   </div>
 
+  {#if insuranceInfo?.accepted === false}
+    <div class="card" style="border-left:4px solid #ef4444">
+      <div style="color:#dc2626; font-size:14px; font-weight:600; margin-bottom:8px">⚠ Insurance Not Covered</div>
+      <div style="font-size:13px; color:#374151; margin-bottom:10px">
+        {insuranceInfo.patient_insurance} is not accepted. Self-pay rate: <strong>{insuranceInfo.self_pay_rate ? '$' + insuranceInfo.self_pay_rate : 'unknown'}</strong>
+      </div>
+      <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer">
+        <input type="checkbox" bind:checked={insuranceAcknowledged} style="width:16px; height:16px; margin-top:2px; accent-color:#2563eb" />
+        <span style="font-size:13px; color:#374151">I have informed the patient of the self-pay rate and they wish to proceed with this provider.</span>
+      </label>
+    </div>
+  {/if}
+
   {#if bookingConfirmed}
     <!-- Post-booking feedback form -->
     <div class="card" style="border-left:4px solid #16a34a">
@@ -249,7 +277,7 @@
         <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Location</button>
         <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Preferences</button>
       </div>
-      <button class="btn btn-success" on:click={confirmBooking} disabled={confirming}>
+      <button class="btn btn-success" on:click={confirmBooking} disabled={confirming || (insuranceInfo?.accepted === false && !insuranceAcknowledged)}>
         {confirming ? 'Confirming...' : '✓ Confirm Booking'}
       </button>
     </div>

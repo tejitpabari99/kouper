@@ -44,7 +44,11 @@ def execute_tool(tool_name: str, tool_input: Dict[str, Any], session_patient: Op
             return result.model_dump_json()
 
         elif tool_name == "check_insurance":
-            result = check_insurance(tool_input.get("insurance_name", ""), tool_input.get("specialty", ""))
+            result = check_insurance(
+                tool_input.get("insurance_name", ""),
+                tool_input.get("specialty", ""),
+                provider_name=tool_input.get("provider_name"),
+            )
             return result.model_dump_json()
 
         else:
