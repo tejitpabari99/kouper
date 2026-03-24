@@ -15,12 +15,20 @@
   let state = null;
   let confirming = false;
   let error = '';
+  let apptInfo = null;
+  let scriptOpen = true;
 
   onMount(async () => {
     try {
       state = await api.getState(sid);
     } catch (e) {
       error = e.message;
+    }
+    // Load cached appointment info
+    const key = `appointment_info_${sid}_${idx}`;
+    const cached = sessionStorage.getItem(key);
+    if (cached) {
+      try { apptInfo = JSON.parse(cached); } catch(_) {}
     }
   });
 
@@ -43,10 +51,6 @@
     }
   }
 
-  function goBack() {
-    goto(`/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`);
-  }
-
   $: chatContext = [
     `Screen: Booking Confirmation (Step 6) — Referral ${idx + 1}`,
     state?.patient ? `Patient: ${state.patient.name} (DOB: ${state.patient.dob})` : '',
@@ -65,7 +69,7 @@
 
 <div class="screen">
   <div>
-    <div class="screen-title">Step 6 of 7 &mdash; Referral {idx + 1}</div>
+    <div class="screen-title">Step 6 &mdash; Referral {idx + 1}</div>
     <div class="screen-subtitle">Booking Summary</div>
     <div style="color:#6b7280; font-size:14px; margin-top:4px">Please review before confirming</div>
   </div>
@@ -82,9 +86,11 @@
     <div class="detail-row"><span class="label">Specialty</span><span class="value">{specialty}</span></div>
     <div class="detail-row"><span class="label">Location</span><span class="value">{location}</span></div>
 
-    <div class="info-row" style="margin-top:12px">
-      ℹ️ The assistant has determined the appointment type (NEW/ESTABLISHED) and arrival time based on the patient's history. Review the details screen if needed.
-    </div>
+    {#if apptInfo}
+      <div class="detail-row"><span class="label">Appointment Type</span><span class="value">{apptInfo.appointment_type === 'ESTABLISHED' ? 'Established Patient' : 'New Patient'}</span></div>
+      <div class="detail-row"><span class="label">Duration</span><span class="value">{apptInfo.duration_minutes} minutes</span></div>
+      <div class="detail-row"><span class="label">Arrive Early</span><span class="value">{apptInfo.arrive_early_minutes} minutes before appointment</span></div>
+    {/if}
   </div>
 
   {#if prefs}
@@ -99,10 +105,27 @@
     </div>
   {/if}
 
+  <div class="card" style="border-left:4px solid #4f46e5">
+    <button type="button" style="background:none;border:none;font-size:14px;font-weight:600;color:#4f46e5;cursor:pointer;padding:0;display:flex;align-items:center;gap:6px;width:100%;text-align:left" on:click={() => scriptOpen = !scriptOpen}>
+      💬 What to Tell the Patient {scriptOpen ? '▾' : '▸'}
+    </button>
+    {#if scriptOpen}
+      <div style="margin-top:12px; padding:12px 14px; background:#eef2ff; border-radius:6px; font-size:13px; line-height:1.7; color:#312e81">
+        "I've submitted your referral request with <strong>{providerName}</strong> at <strong>{location}</strong>.
+        {#if apptInfo}Please plan to arrive <strong>{apptInfo.arrive_early_minutes} minutes early</strong> for your <strong>{apptInfo.duration_minutes}-minute</strong> appointment.{/if}
+        {#if prefs}The office will reach you by <strong>{prefs.contact_method}</strong> during the <strong>{prefs.best_contact_time}</strong>{/if} to confirm your appointment date and time.
+        {#if prefs?.transportation_needs}Someone will also call you within 24 hours to arrange your transportation.{/if}"
+      </div>
+    {/if}
+  </div>
+
   <div class="nav-row">
-    <button class="btn btn-secondary" on:click={goBack}>← Edit</button>
+    <div style="display:flex; flex-direction:column; gap:6px">
+      <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Location</button>
+      <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Preferences</button>
+    </div>
     <button class="btn btn-success" on:click={confirmBooking} disabled={confirming}>
-      {confirming ? 'Confirming...' : '\u2713 Confirm Booking'}
+      {confirming ? 'Confirming...' : '✓ Confirm Booking'}
     </button>
   </div>
 

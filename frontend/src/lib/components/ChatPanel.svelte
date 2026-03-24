@@ -1,28 +1,57 @@
 <script>
   import { api } from '$lib/api/client.js';
   import { marked } from 'marked';
+  import { chatMessages } from '$lib/stores/session.js';
 
   marked.setOptions({ breaks: true });
 
   export let sessionId;
   export let context = '';
 
-  let messages = [];
+  $: messages = $chatMessages[sessionId] || [];
   let input = '';
   let sending = false;
+  let slowWarning = false;
   let open = false;
+
+  function addMessage(msg) {
+    chatMessages.update(all => ({
+      ...all,
+      [sessionId]: [...(all[sessionId] || []), msg]
+    }));
+  }
 
   async function sendMessage() {
     if (!input.trim() || sending) return;
     const msg = input.trim();
     input = '';
-    messages = [...messages, { role: 'user', text: msg }];
+    addMessage({ role: 'user', text: msg });
     sending = true;
+    slowWarning = false;
+
+    let slowTimer = setTimeout(() => {
+      if (sending) slowWarning = true;
+    }, 5000);
+    let timeoutTimer = setTimeout(() => {
+      if (sending) {
+        sending = false;
+        slowWarning = false;
+        addMessage({ role: 'assistant', text: 'The assistant is not responding. You can continue booking without it.' });
+        clearTimeout(slowTimer);
+      }
+    }, 15000);
+
     try {
       const res = await api.sendMessage(sessionId, msg, context);
-      messages = [...messages, { role: 'assistant', text: res.response }];
+      clearTimeout(slowTimer);
+      clearTimeout(timeoutTimer);
+      slowWarning = false;
+      addMessage({ role: 'assistant', text: res.response });
     } catch (e) {
-      messages = [...messages, { role: 'assistant', text: `Error: ${e.message}` }];
+      clearTimeout(slowTimer);
+      clearTimeout(timeoutTimer);
+      slowWarning = false;
+      addMessage({ role: 'assistant', text: `Error: ${e.message}` });
     } finally {
       sending = false;
       setTimeout(() => {
@@ -30,6 +59,11 @@
         if (el) el.scrollTop = el.scrollHeight;
       }, 50);
     }
+  }
+
+  async function submitPrompt(text) {
+    input = text;
+    await sendMessage();
   }
 
   function handleKey(e) {
@@ -55,8 +89,18 @@
       <!-- Messages -->
       <div id="chat-messages" style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px">
         {#if messages.length === 0}
-          <div style="color:#9ca3af; font-size:13px; text-align:center; margin-top:24px">
-            Ask about providers, insurance, availability, or appointment types.
+          <div style="padding:8px 4px">
+            <div style="color:#9ca3af; font-size:12px; margin-bottom:10px; text-align:center">Suggested questions:</div>
+            {#each [
+              'Is this patient covered for this specialty?',
+              "What's the difference between NEW and ESTABLISHED?",
+              'Who else is available for this specialty?'
+            ] as prompt}
+              <button type="button" on:click={() => submitPrompt(prompt)}
+                style="display:block;width:100%;text-align:left;padding:7px 10px;margin-bottom:6px;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:6px;font-size:12px;color:#3730a3;cursor:pointer;line-height:1.4">
+                {prompt}
+              </button>
+            {/each}
           </div>
         {/if}
         {#each messages as msg}
@@ -75,7 +119,7 @@
         {#if sending}
           <div style="display:flex; justify-content:flex-start">
             <div style="background:#f3f4f6; padding:8px 12px; border-radius:8px; font-size:13px; color:#6b7280">
-              Thinking...
+              {slowWarning ? 'Still working... (taking longer than usual)' : 'Thinking...'}
             </div>
           </div>
         {/if}

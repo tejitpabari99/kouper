@@ -28,4 +28,5 @@ export const api = {
   getAppointmentInfo: (sessionId, provider, specialty) => request('GET', `/session/${sessionId}/appointment-info?provider=${encodeURIComponent(provider)}&specialty=${encodeURIComponent(specialty)}`),
   deleteSession: (sessionId) => request('DELETE', `/session/${sessionId}`),
   getDistance: (fromAddress, providerAddress) => request('GET', `/distance?from_address=${encodeURIComponent(fromAddress)}&provider_address=${encodeURIComponent(providerAddress)}`),
+  sendSummary: (sessionId, method, contact) => request('POST', `/session/${sessionId}/send-summary`, { method, contact }),
 };
