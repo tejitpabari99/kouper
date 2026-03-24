@@ -8,19 +8,19 @@ from .tool_executor import execute_tool
 
 load_dotenv('/root/projects/kouper/.env')
 
-def chat(message: str, conversation_history: list, patient: Optional[dict] = None) -> tuple[str, list]:
+def chat(message: str, conversation_history: list, patient: Optional[dict] = None, session=None) -> tuple[str, list]:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY not set")
     client = anthropic.Anthropic(api_key=api_key)
 
     patient_context = build_patient_context(patient)
-    system_prompt = build_system_prompt(patient_context)
+    system_prompt = build_system_prompt(patient_context, session=session)
     history = conversation_history + [{"role": "user", "content": message}]
 
     while True:
         response = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-haiku-4-5-20251001",
             max_tokens=2048,
             system=system_prompt,
             tools=TOOLS,
