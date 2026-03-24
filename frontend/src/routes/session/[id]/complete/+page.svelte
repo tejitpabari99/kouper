@@ -7,8 +7,6 @@
   const sid = $page.params.id;
   let summary = null;
   let error = '';
-  let showDeleteConfirm = false;
-  let deleting = false;
   let sendMethod = 'text';
   let sendContact = '';
   let sending = false;
@@ -88,14 +86,6 @@
 
   function printSummary() {
     window.print();
-  }
-
-  async function deleteSession() {
-    deleting = true;
-    try {
-      await api.deleteSession(sid);
-    } catch(_) {}
-    goto('/');
   }
 
   async function sendToPatient() {
@@ -314,23 +304,6 @@
     <div class="nav-row">
       <button class="btn btn-secondary" on:click={printSummary}>&#128424; Print Summary</button>
       <button class="btn btn-primary" on:click={startNew}>Start New Session</button>
-    </div>
-    <div style="text-align:center; margin-top:12px">
-      {#if showDeleteConfirm}
-        <div style="padding:12px; background:#fef2f2; border:1px solid #fca5a5; border-radius:8px; font-size:13px; margin-bottom:8px">
-          Delete this session permanently? This cannot be undone.
-          <div style="margin-top:8px; display:flex; gap:8px; justify-content:center">
-            <button class="btn btn-secondary" style="font-size:12px; padding:4px 12px" on:click={() => showDeleteConfirm = false}>Cancel</button>
-            <button style="font-size:12px; padding:4px 12px; background:#dc2626; color:white; border:none; border-radius:6px; cursor:pointer" on:click={deleteSession} disabled={deleting}>
-              {deleting ? 'Deleting...' : 'Yes, Delete'}
-            </button>
-          </div>
-        </div>
-      {:else}
-        <button style="background:none; border:none; color:#9ca3af; font-size:12px; cursor:pointer; text-decoration:underline" on:click={() => showDeleteConfirm = true}>
-          Delete this session
-        </button>
-      {/if}
     </div>
   {:else if !error}
     <div style="color:#6b7280; font-size:14px">Loading summary...</div>

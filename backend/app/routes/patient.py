@@ -1,18 +1,49 @@
+import json
 from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
 from ..session_store import store
 from ..api.patient_client import get_patient, search_patients
 from ..api.exceptions import PatientNotFound, APIUnavailable
 from ..audit_log import append_audit_entry, AuditLogEntry
+from ..database import get_db
+from .new_patient import LOCAL_PATIENT_ID_OFFSET
 
 router = APIRouter(tags=["patient"])
 
 @router.get("/patients")
 def search_patients_endpoint(q: str = Query(default="")):
+    results = []
     try:
-        return search_patients(q)
-    except APIUnavailable as e:
-        raise HTTPException(status_code=503, detail=str(e))
+        results = search_patients(q)
+    except APIUnavailable:
+        pass  # fall through to local results
+
+    # Also search local patients
+    try:
+        with get_db() as conn:
+            rows = conn.execute(
+                "SELECT * FROM local_patients WHERE LOWER(name) LIKE ? ORDER BY created_at DESC LIMIT 10",
+                (f"%{q.lower()}%",),
+            ).fetchall()
+        for row in rows:
+            patient_id = LOCAL_PATIENT_ID_OFFSET + row["id"]
+            results.append({
+                "id": patient_id,
+                "name": row["name"],
+                "dob": row["dob"],
+                "phone": row["phone"] or "",
+                "email": row["email"] or "",
+                "ehrId": row["ehr_id"],
+                "insurance": row["insurance"],
+                "pcp": row["pcp"],
+                "is_local": True,
+            })
+    except Exception:
+        pass
+
+    if not results and q:
+        raise HTTPException(status_code=503, detail="Patient system unavailable and no local patients found.")
+    return results
 
 router2 = APIRouter(prefix="/session", tags=["patient"])
 

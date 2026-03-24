@@ -27,7 +27,7 @@
       return;
     }
 
-    patientInsurance = state?.patient?.insurance || '';
+    patientInsurance = state?.insurance || state?.patient?.insurance || '';
 
     const ref = state?.patient?.referred_providers?.[idx];
     const spec = ref?.specialty || '';

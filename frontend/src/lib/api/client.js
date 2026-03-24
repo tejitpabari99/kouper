@@ -38,6 +38,8 @@ export const api = {
   submitErrorFeedback: (data) => request('POST', '/feedback/error', data),
   submitBookingFeedback: (data) => request('POST', '/feedback/booking', data),
   setInsurance: (sessionId, insurance) => request('POST', `/session/${sessionId}/insurance`, { insurance }),
+  createLocalPatient: (data) => request('POST', '/patients/local', data),
+  startSessionWithLocalPatient: (sessionId, patientId) => request('POST', `/session/${sessionId}/start-local/${patientId}`),
   checkInsurance: (sessionId, provider, specialty) => request('GET', `/session/${sessionId}/insurance-check?provider=${encodeURIComponent(provider)}&specialty=${encodeURIComponent(specialty)}`),
   logNurseEvent: (sessionId, action, detail = {}) => {
     // Fire-and-forget — never let audit failures block the UI

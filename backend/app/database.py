@@ -110,5 +110,18 @@ CREATE TABLE IF NOT EXISTS feedback (
     data JSON NOT NULL,
     created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS local_patients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    dob TEXT NOT NULL,
+    pcp TEXT NOT NULL DEFAULT 'Self-referred',
+    phone TEXT NOT NULL DEFAULT '',
+    email TEXT NOT NULL DEFAULT '',
+    insurance TEXT,
+    ehr_id TEXT NOT NULL,
+    referred_specialties JSON NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL
+);
         """)
         conn.commit()
