@@ -31,6 +31,23 @@
   let saving = false;
   let error = '';
 
+  let transportResources = [];
+  let transportResourcesLoading = false;
+
+  async function loadTransportResources() {
+    if (transportResources.length > 0) return;
+    transportResourcesLoading = true;
+    try {
+      transportResources = await api.getTransportResources();
+    } catch (_) {
+      transportResources = [];
+    } finally {
+      transportResourcesLoading = false;
+    }
+  }
+
+  $: if (transportationNeeds) loadTransportResources();
+
   async function proceed() {
     saving = true;
     error = '';
@@ -160,6 +177,24 @@
           <strong>Script for patient:</strong><br/>
           "I've noted that you'll need transportation assistance for this appointment. Our care team will contact you within 2 business days to arrange a ride. Please confirm your pick-up address when they call."
         </div>
+        {#if transportResourcesLoading}
+          <div style="font-size:12px; color:#6b7280; margin-top:8px">Loading transport resources...</div>
+        {:else if transportResources.length > 0}
+          <div style="margin-top:10px; font-size:13px; color:#92400e; font-weight:600">Community Transportation Resources:</div>
+          <div style="margin-top:6px; display:flex; flex-direction:column; gap:6px">
+            {#each transportResources as r}
+              <div style="padding:8px 10px; background:#fff; border:1px solid #fde68a; border-radius:6px; font-size:12px">
+                <div style="font-weight:600; color:#374151">{r.name}
+                  <span style="font-weight:400; color:#6b7280; margin-left:6px">({r.type.replace('_', ' ')})</span>
+                </div>
+                <div style="color:#6b7280; margin-top:2px">{r.service_area}</div>
+                {#if r.phone}<div style="color:#374151; margin-top:2px">📞 {r.phone}</div>{/if}
+                {#if r.url}<div style="margin-top:2px"><a href={r.url} target="_blank" style="color:#2563eb; text-decoration:underline">{r.url}</a></div>{/if}
+                <div style="color:#6b7280; margin-top:2px; font-style:italic">{r.notes}</div>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
 
