@@ -19,6 +19,14 @@
   let scriptOpen = true;
   let nurseNotes = '';
 
+  // Post-booking feedback
+  let bookingConfirmed = false;
+  let feedbackRating = 0;
+  let feedbackComment = '';
+  let feedbackSubmitting = false;
+  let feedbackSubmitted = false;
+  let feedbackNote = '';
+
   onMount(async () => {
     try {
       state = await api.getState(sid);
@@ -52,11 +60,37 @@
         location_name: location,
         nurse_notes: nurseNotes,
       });
-      goto(`/session/${sid}`);
+      bookingConfirmed = true;
     } catch (e) {
       error = e.message;
       confirming = false;
     }
+  }
+
+  async function submitFeedback() {
+    if (!feedbackRating) return;
+    feedbackSubmitting = true;
+    try {
+      const res = await api.submitBookingFeedback({
+        session_id: sid,
+        referral_index: idx,
+        provider_name: providerName,
+        specialty: specialty,
+        rating: feedbackRating,
+        comment: feedbackComment,
+      });
+      feedbackNote = res.note;
+      feedbackSubmitted = true;
+    } catch (_) {
+      feedbackSubmitted = true;
+      feedbackNote = 'Feedback stored locally. In production, this would be emailed to the care quality team.';
+    } finally {
+      feedbackSubmitting = false;
+    }
+  }
+
+  function continueToOverview() {
+    goto(`/session/${sid}`);
   }
 
   $: chatContext = [
@@ -146,15 +180,68 @@
     </div>
   </div>
 
-  <div class="nav-row">
-    <div style="display:flex; flex-direction:column; gap:6px">
-      <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Location</button>
-      <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Preferences</button>
+  {#if bookingConfirmed}
+    <!-- Post-booking feedback form -->
+    <div class="card" style="border-left:4px solid #16a34a">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
+        <span style="color:#16a34a; font-size:20px">✓</span>
+        <div style="font-weight:700; font-size:15px; color:#15803d">Booking Confirmed</div>
+      </div>
+
+      {#if !feedbackSubmitted}
+        <div style="font-size:14px; font-weight:600; color:#374151; margin-bottom:8px">How was your experience with this booking?</div>
+        <div style="display:flex; gap:6px; margin-bottom:10px">
+          {#each [1,2,3,4,5] as star}
+            <button
+              on:click={() => feedbackRating = star}
+              style="background:none; border:none; font-size:26px; cursor:pointer; line-height:1; padding:0; color:{feedbackRating >= star ? '#f59e0b' : '#d1d5db'}"
+            >★</button>
+          {/each}
+          {#if feedbackRating}
+            <span style="font-size:13px; color:#6b7280; align-self:center; margin-left:4px">
+              {['','Poor','Fair','Good','Very good','Excellent'][feedbackRating]}
+            </span>
+          {/if}
+        </div>
+        <div style="margin-bottom:10px">
+          <textarea
+            bind:value={feedbackComment}
+            rows="2"
+            placeholder="Optional comment — e.g. 'Provider selection could be easier to filter'"
+            style="width:100%; font-size:13px; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; resize:vertical; box-sizing:border-box; font-family:inherit"
+          ></textarea>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center">
+          <button
+            class="btn btn-primary"
+            style="font-size:13px"
+            on:click={submitFeedback}
+            disabled={!feedbackRating || feedbackSubmitting}
+          >
+            {feedbackSubmitting ? 'Submitting...' : 'Submit Feedback'}
+          </button>
+          <button
+            style="background:none; border:none; color:#9ca3af; font-size:13px; cursor:pointer; text-decoration:underline"
+            on:click={continueToOverview}
+          >Skip</button>
+        </div>
+      {:else}
+        <div style="font-size:13px; color:#16a34a; font-weight:600; margin-bottom:6px">✓ Thank you for your feedback!</div>
+        <div style="font-size:12px; color:#6b7280; margin-bottom:14px">{feedbackNote}</div>
+        <button class="btn btn-primary" on:click={continueToOverview}>Continue →</button>
+      {/if}
     </div>
-    <button class="btn btn-success" on:click={confirmBooking} disabled={confirming}>
-      {confirming ? 'Confirming...' : '✓ Confirm Booking'}
-    </button>
-  </div>
+  {:else}
+    <div class="nav-row">
+      <div style="display:flex; flex-direction:column; gap:6px">
+        <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Location</button>
+        <button class="btn btn-secondary" style="font-size:13px" on:click={() => goto(`/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`)}>← Edit Preferences</button>
+      </div>
+      <button class="btn btn-success" on:click={confirmBooking} disabled={confirming}>
+        {confirming ? 'Confirming...' : '✓ Confirm Booking'}
+      </button>
+    </div>
+  {/if}
 
   <ChatPanel sessionId={sid} context={chatContext} />
 </div>

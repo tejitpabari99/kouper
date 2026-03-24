@@ -133,9 +133,17 @@
 {/if}
 
 <div class="screen">
-  <div>
-    <div class="screen-title">Care Coordinator</div>
-    <div class="screen-subtitle">Patient Lookup</div>
+  <div style="display:flex; justify-content:space-between; align-items:flex-start">
+    <div>
+      <div class="screen-title">Care Coordinator</div>
+      <div class="screen-subtitle">Patient Lookup</div>
+    </div>
+    <a
+      href="/audit"
+      style="font-size:12px; color:#6b7280; text-decoration:none; display:flex; align-items:center; gap:4px; margin-top:6px; padding:4px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb"
+    >
+      📋 Audit Log
+    </a>
   </div>
 
   <div class="card">

@@ -34,4 +34,7 @@ export const api = {
   getReminders: (sessionId) => request('GET', `/session/${sessionId}/reminders`),
   logOutcome: (data) => request('POST', '/outcomes', data),
   getPatientOutcomes: (patientId) => request('GET', `/outcomes/patient/${patientId}`),
+  getAuditLog: (n = 100) => request('GET', `/audit/log?n=${n}`),
+  submitErrorFeedback: (data) => request('POST', '/feedback/error', data),
+  submitBookingFeedback: (data) => request('POST', '/feedback/booking', data),
 };

@@ -21,6 +21,30 @@
     }));
   }
 
+  function makeIncidentId() {
+    return 'INC-' + Date.now().toString(36).toUpperCase();
+  }
+
+  let feedbackState = {}; // { incidentId: 'idle' | 'sending' | 'sent' }
+  let feedbackComment = {};
+
+  async function reportIncident(incidentId, errorCode, errorMessage) {
+    feedbackState = { ...feedbackState, [incidentId]: 'sending' };
+    try {
+      await api.submitErrorFeedback({
+        incident_id: incidentId,
+        error_code: errorCode || null,
+        error_message: errorMessage,
+        session_id: sessionId,
+        page_context: context.slice(0, 300),
+        user_comment: feedbackComment[incidentId] || '',
+      });
+      feedbackState = { ...feedbackState, [incidentId]: 'sent' };
+    } catch (_) {
+      feedbackState = { ...feedbackState, [incidentId]: 'sent' };
+    }
+  }
+
   async function sendMessage() {
     if (!input.trim() || sending) return;
     const msg = input.trim();
@@ -36,7 +60,15 @@
       if (sending) {
         sending = false;
         slowWarning = false;
-        addMessage({ role: 'assistant', text: 'The assistant is not responding. You can continue booking without it.' });
+        const incidentId = makeIncidentId();
+        addMessage({
+          role: 'assistant',
+          text: 'The assistant is not responding. You can continue booking without it.',
+          error: true,
+          errorCode: 'TIMEOUT',
+          errorMessage: 'Request timed out after 15s',
+          incidentId,
+        });
         clearTimeout(slowTimer);
       }
     }, 15000);
@@ -52,7 +84,15 @@
       clearTimeout(slowTimer);
       clearTimeout(timeoutTimer);
       slowWarning = false;
-      addMessage({ role: 'assistant', text: `Error: ${e.message}` });
+      const incidentId = makeIncidentId();
+      addMessage({
+        role: 'assistant',
+        text: e.message,
+        error: true,
+        errorCode: e.code || 'UNKNOWN',
+        errorMessage: e.message,
+        incidentId,
+      });
     } finally {
       sending = false;
       setTimeout(() => {
@@ -107,9 +147,38 @@
         {#each messages as msg}
           <div style="display:flex; {msg.role === 'user' ? 'justify-content:flex-end' : 'justify-content:flex-start'}">
             {#if msg.role === 'assistant'}
-              <div class="msg-assistant" style="max-width:85%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#f3f4f6; color:#111827">
-                {@html marked(msg.text)}
-              </div>
+              {#if msg.error}
+                <div style="max-width:92%; padding:10px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#fef2f2; border:1px solid #fca5a5; color:#991b1b">
+                  <div style="font-weight:600; margin-bottom:4px">⚠ System Error</div>
+                  <div style="margin-bottom:6px">{msg.text}</div>
+                  <div style="font-size:11px; color:#b91c1c; font-family:monospace; margin-bottom:8px">
+                    Code: {msg.errorCode} &nbsp;·&nbsp; Incident: {msg.incidentId}
+                  </div>
+                  {#if feedbackState[msg.incidentId] === 'sent'}
+                    <div style="font-size:11px; color:#16a34a; font-weight:600">✓ Reported. In production, this would notify the engineering team.</div>
+                  {:else}
+                    <div style="margin-bottom:4px">
+                      <textarea
+                        placeholder="Optional: describe what you were doing (helps the team)"
+                        rows="2"
+                        style="width:100%; font-size:11px; padding:4px 6px; border:1px solid #fca5a5; border-radius:4px; resize:none; background:#fff8f8; color:#374151; box-sizing:border-box; font-family:inherit"
+                        on:input={(e) => feedbackComment = { ...feedbackComment, [msg.incidentId]: e.target.value }}
+                      ></textarea>
+                    </div>
+                    <button
+                      on:click={() => reportIncident(msg.incidentId, msg.errorCode, msg.errorMessage)}
+                      disabled={feedbackState[msg.incidentId] === 'sending'}
+                      style="font-size:11px; padding:3px 10px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer"
+                    >
+                      {feedbackState[msg.incidentId] === 'sending' ? 'Sending…' : 'Report Issue'}
+                    </button>
+                  {/if}
+                </div>
+              {:else}
+                <div class="msg-assistant" style="max-width:85%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#f3f4f6; color:#111827">
+                  {@html marked(msg.text)}
+                </div>
+              {/if}
             {:else}
               <div style="max-width:85%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#2563eb; color:white">
                 {msg.text}

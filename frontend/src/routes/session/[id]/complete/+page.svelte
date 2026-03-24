@@ -152,65 +152,65 @@
           {/if}
 
           <!-- A3: outcome logging -->
-          <div style="margin-top:10px; padding-top:10px; border-top:1px solid #e5e7eb">
+          <div style="margin-top:12px; padding-top:12px; border-top:1px solid #e5e7eb">
+            <div style="font-size:12px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px">Post-Appointment Outcome</div>
             {#if outcomeSaved[booking.referral_index]}
-              <div style="font-size:12px; color:#16a34a; font-weight:600">✓ Outcome logged</div>
+              <div style="font-size:13px; color:#16a34a; font-weight:600; padding:8px 10px; background:#f0fdf4; border-radius:6px; border:1px solid #bbf7d0">✓ Outcome logged — feeds back into future NEW/ESTABLISHED calculations</div>
             {:else}
-              <button
-                on:click={() => toggleOutcome(booking.referral_index)}
-                style="background:none; border:none; color:#6366f1; font-size:12px; cursor:pointer; padding:0; text-decoration:underline"
-              >
-                {outcomeOpen[booking.referral_index] ? '▾ Hide' : '▸ Update Outcome'}
-              </button>
-            {/if}
-
-            {#if outcomeOpen[booking.referral_index]}
-              {@const form = outcomeForm[booking.referral_index] || { date: '', status: 'completed', notes: '' }}
-              <div style="margin-top:8px; padding:10px; background:#f9fafb; border-radius:6px; border:1px solid #e5e7eb">
-                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px">
-                  <div>
-                    <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Appointment Date</label>
-                    <input
-                      type="date"
-                      value={form.date}
-                      on:input={(e) => outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...form, date: e.target.value } }}
-                      style="font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px"
-                    />
-                  </div>
-                  <div>
-                    <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Status</label>
-                    <select
-                      value={form.status}
-                      on:change={(e) => outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...form, status: e.target.value } }}
-                      style="font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px"
-                    >
-                      <option value="completed">Completed</option>
-                      <option value="no-show">No-Show</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
+              <div style="font-size:12px; color:#6b7280; margin-bottom:8px">Log what happened after the appointment. Completed visits update the patient's appointment type eligibility.</div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px">
+                <div>
+                  <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Appointment Date</label>
+                  <input
+                    type="date"
+                    value={outcomeForm[booking.referral_index]?.date || ''}
+                    on:input={(e) => {
+                      const f = outcomeForm[booking.referral_index] || { date: '', status: 'completed', notes: '' };
+                      outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...f, date: e.target.value } };
+                    }}
+                    style="font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px"
+                  />
                 </div>
-                <div style="margin-bottom:8px">
-                  <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Notes (optional)</label>
-                  <textarea
-                    value={form.notes}
-                    on:input={(e) => outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...form, notes: e.target.value } }}
-                    rows="2"
-                    style="width:100%; font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px; resize:vertical; box-sizing:border-box"
-                  ></textarea>
+                <div>
+                  <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Status</label>
+                  <select
+                    value={outcomeForm[booking.referral_index]?.status || 'completed'}
+                    on:change={(e) => {
+                      const f = outcomeForm[booking.referral_index] || { date: '', status: 'completed', notes: '' };
+                      outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...f, status: e.target.value } };
+                    }}
+                    style="font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px"
+                  >
+                    <option value="completed">✓ Completed</option>
+                    <option value="no-show">✗ No-Show</option>
+                    <option value="cancelled">— Cancelled</option>
+                  </select>
                 </div>
-                {#if outcomeError[booking.referral_index]}
-                  <div style="font-size:12px; color:#dc2626; margin-bottom:6px">{outcomeError[booking.referral_index]}</div>
-                {/if}
-                <button
-                  class="btn btn-primary"
-                  style="font-size:12px; padding:4px 14px"
-                  on:click={() => saveOutcome(booking)}
-                  disabled={outcomeSaving[booking.referral_index]}
-                >
-                  {outcomeSaving[booking.referral_index] ? 'Saving...' : 'Save Outcome'}
-                </button>
               </div>
+              <div style="margin-bottom:8px">
+                <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Notes (optional)</label>
+                <textarea
+                  value={outcomeForm[booking.referral_index]?.notes || ''}
+                  on:input={(e) => {
+                    const f = outcomeForm[booking.referral_index] || { date: '', status: 'completed', notes: '' };
+                    outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...f, notes: e.target.value } };
+                  }}
+                  rows="2"
+                  placeholder="e.g., Patient arrived on time, follow-up scheduled in 6 weeks"
+                  style="width:100%; font-size:12px; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; resize:vertical; box-sizing:border-box; font-family:inherit"
+                ></textarea>
+              </div>
+              {#if outcomeError[booking.referral_index]}
+                <div style="font-size:12px; color:#dc2626; margin-bottom:6px">{outcomeError[booking.referral_index]}</div>
+              {/if}
+              <button
+                class="btn btn-primary"
+                style="font-size:12px; padding:5px 16px"
+                on:click={() => saveOutcome(booking)}
+                disabled={outcomeSaving[booking.referral_index]}
+              >
+                {outcomeSaving[booking.referral_index] ? 'Saving...' : 'Log Outcome'}
+              </button>
             {/if}
           </div>
         </div>
