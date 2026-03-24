@@ -25,6 +25,11 @@
     goto(`/session/${sid}/complete`);
   }
 
+  // B8: startOver navigates back to home
+  function startOver() {
+    goto('/');
+  }
+
   $: referrals = state?.patient?.referred_providers || [];
   $: bookings = state?.bookings || [];
   $: bookedIndexes = new Set(bookings.map(b => b.referral_index));
@@ -44,10 +49,25 @@
 </script>
 
 <div class="screen">
-  <div>
-    <div class="screen-title">Step 2 of 7</div>
-    <div class="screen-subtitle">Referrals Overview</div>
-    {#if state?.patient}<div style="color:#6b7280; font-size:14px; margin-top:4px">{state.patient.name}</div>{/if}
+  <div style="display:flex; justify-content:space-between; align-items:flex-start">
+    <div>
+      <!-- B10: replace "Step 2 of 7" with Referrals Overview + progress -->
+      <div class="screen-title">Referrals Overview</div>
+      <div class="screen-subtitle">Step 2</div>
+      {#if state?.patient}
+        <div style="color:#6b7280; font-size:14px; margin-top:2px">{state.patient.name}</div>
+        <div style="font-size:13px; color:#6b7280; margin-top:2px">
+          {bookedIndexes.size} of {referrals.length} referral{referrals.length !== 1 ? 's' : ''} booked
+        </div>
+      {/if}
+    </div>
+    <!-- B8: wrong patient back link -->
+    <button
+      style="background:none; border:none; color:#6b7280; font-size:13px; cursor:pointer; text-decoration:underline; margin-top:4px; white-space:nowrap"
+      on:click={startOver}
+    >
+      ← Wrong patient? Start over
+    </button>
   </div>
 
   {#if error}<div class="error-msg">{error}</div>{/if}
@@ -57,6 +77,13 @@
       <p style="font-size:14px; color:#6b7280; margin-bottom:16px">
         Following hospital discharge, the following appointments need booking:
       </p>
+
+      <!-- B6: no-show warning ABOVE the referrals list -->
+      {#if state.patient?.appointments?.some(a => a.status === 'noshow')}
+        <div class="warning-row" style="margin-bottom:16px">
+          ⚠️ Note: This patient has a previous no-show on record. Consider confirming transportation needs.
+        </div>
+      {/if}
 
       {#each referrals as referral, idx}
         <div class="provider-card" class:highlighted={bookedIndexes.has(idx)}>
@@ -79,6 +106,10 @@
               <div style="font-size:13px; color:#374151">
                 <strong>{booking.provider_name}</strong> &mdash; {booking.location} &mdash; {booking.appointment_type}
               </div>
+              <!-- B9: appointment time note on booked cards -->
+              <div style="font-size:12px; color:#9ca3af; margin-top:4px; font-style:italic">
+                The provider's office will contact the patient to confirm the appointment date and time.
+              </div>
             {/if}
           {:else}
             <button class="btn btn-primary" on:click={() => bookReferral(idx)}>
@@ -89,18 +120,14 @@
       {/each}
     </div>
 
-    {#if state.patient?.appointments?.some(a => a.status === 'noshow')}
-      <div class="warning-row">
-        ⚠️ Note: This patient has a previous no-show on record. Consider confirming transportation needs.
-      </div>
-    {/if}
-
-    {#if allBooked}
-      <div class="nav-row">
-        <div></div>
-        <button class="btn btn-success" on:click={finishSession}>Complete Session →</button>
-      </div>
-    {/if}
+    <!-- B7: Complete Session button always visible, disabled when not all booked -->
+    <div class="nav-row">
+      <div></div>
+      {@const remaining = referrals.filter((_, i) => !bookedIndexes.has(i)).length}
+      <button class="btn btn-success" on:click={finishSession} disabled={!allBooked}>
+        {allBooked ? 'Complete Session →' : `Complete Session (${remaining} referral${remaining !== 1 ? 's' : ''} remaining)`}
+      </button>
+    </div>
   {:else if !error}
     <div style="color:#6b7280; font-size:14px">Loading...</div>
   {/if}
