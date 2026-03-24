@@ -33,6 +33,7 @@ class CompletedBooking(BaseModel):
 
 class BookingSession(BaseModel):
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=datetime.now)
     step: str = "patient_lookup"
     # Steps: patient_lookup | referrals_overview | provider_selection | appointment_details | preferences | confirmation | complete
     patient: Optional[dict] = None  # PatientData as dict to avoid circular imports

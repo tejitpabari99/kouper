@@ -14,3 +14,11 @@ def get_session_state(session_id: str):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
+
+@router.get("/by-patient/{patient_id}")
+def get_session_by_patient(patient_id: int):
+    """Return the most recent session for a patient, if any exists with completed bookings."""
+    session = store.get_latest_for_patient(patient_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="No session found for this patient")
+    return {"session_id": session.session_id, "step": session.step, "bookings_count": len(session.bookings)}

@@ -12,6 +12,7 @@
   let createdSessionId = null;
   let error = '';
   let debounceTimer = null;
+  let existingSession = null; // prior session with bookings for this patient
 
   function onSearchInput() {
     clearTimeout(debounceTimer);
@@ -57,7 +58,15 @@
     loading = true;
     error = '';
     loadedPatient = null;
+    existingSession = null;
     try {
+      // Check for a prior session with bookings for this patient
+      try {
+        existingSession = await api.getSessionByPatient(selectedPatient.id);
+      } catch (_) {
+        existingSession = null; // 404 = no prior session, that's fine
+      }
+
       const session = await api.createSession();
       createdSessionId = session.session_id;
       sessionId.set(createdSessionId);
@@ -69,6 +78,10 @@
     } finally {
       loading = false;
     }
+  }
+
+  function resumeSession() {
+    goto(`/session/${existingSession.session_id}`);
   }
 
   function proceed() {
@@ -143,9 +156,19 @@
     {/if}
 
     {#if loadedPatient}
+      {#if existingSession}
+        <div style="margin-top:16px; padding:14px 16px; background:#fffbeb; border:1px solid #fcd34d; border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:12px">
+          <div>
+            <div style="font-weight:600; font-size:14px; color:#92400e">Previous session found</div>
+            <div style="font-size:13px; color:#78350f">{existingSession.bookings_count} booking{existingSession.bookings_count !== 1 ? 's' : ''} already completed for this patient.</div>
+          </div>
+          <button class="btn btn-primary" style="white-space:nowrap; font-size:13px" on:click={resumeSession}>Resume Session →</button>
+        </div>
+      {/if}
+
       <div style="margin-top:16px; padding:16px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
-          <span style="color:#16a34a; font-size:18px">&#10003;</span>
+          <span style="color:#16a34a; font-size:18px">✓</span>
           <span style="font-size:18px; font-weight:700">{loadedPatient.name}</span>
         </div>
         <div class="detail-row"><span class="label">Date of Birth</span><span class="value">{loadedPatient.dob}</span></div>
