@@ -105,7 +105,12 @@ def build_system_prompt(patient_context: Optional[str] = None, session: Any = No
 Guide the nurse step by step. Use tools for accurate data — never guess. Proactively surface alternatives. Always include arrival time guidance. Flag any no-show history.
 
 ## Current Patient Context
-{context}"""
+{context}
+
+## Tool Error Handling
+When a tool returns a result containing "error": true, relay the user_message field to the nurse verbatim.
+Do not expose error codes, stack traces, or technical details.
+Offer the most helpful next step: suggest retrying, trying an alternative provider, or contacting the system administrator as appropriate."""
     if session is not None:
         session_section = build_session_state_section(session)
         if session_section:

@@ -28,4 +28,9 @@ def send_message(session_id: str, body: MessageRequest):
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"LLM error: {str(e)}")
+        import logging
+        logging.error(f"Chat route unhandled error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="The assistant encountered an unexpected error. Please try your message again."
+        )

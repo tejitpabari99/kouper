@@ -26,6 +26,8 @@ def start_session_with_patient(session_id: str, patient_id: int):
         store.update(session)
         return patient
     except PatientNotFound:
-        raise HTTPException(status_code=404, detail=f"Patient {patient_id} not found")
-    except APIUnavailable as e:
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=404, detail="No patient found with that ID. Please verify the patient ID.")
+    except APIUnavailable:
+        raise HTTPException(status_code=503, detail="The patient information system is temporarily unavailable. Please try again in a moment.")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to load patient data. Please try again.")
