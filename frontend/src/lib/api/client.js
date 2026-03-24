@@ -1,0 +1,25 @@
+const BASE_URL = 'http://localhost:8000';
+
+async function request(method, path, body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${BASE_URL}${path}`, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export const api = {
+  createSession: () => request('POST', '/session'),
+  startSession: (sessionId, patientId) => request('POST', `/session/${sessionId}/start/${patientId}`),
+  getState: (sessionId) => request('GET', `/session/${sessionId}/state`),
+  sendMessage: (sessionId, message) => request('POST', `/session/${sessionId}/message`, { message }),
+  savePreferences: (sessionId, prefs) => request('POST', `/session/${sessionId}/preferences`, prefs),
+  confirmBooking: (sessionId, data) => request('POST', `/session/${sessionId}/confirm-booking`, data),
+  getSummary: (sessionId) => request('GET', `/session/${sessionId}/summary`),
+};
