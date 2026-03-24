@@ -29,6 +29,8 @@ class CompletedBooking(BaseModel):
     provider_address: Optional[str] = None
     provider_hours: Optional[str] = None
     booking_confirmed_at: datetime = Field(default_factory=datetime.now)
+    nurse_notes: str = ""
+    scheduled_date: Optional[str] = None
 
 
 class BookingSession(BaseModel):

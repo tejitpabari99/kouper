@@ -14,6 +14,7 @@ class ConfirmBookingRequest(BaseModel):
     provider_name: str
     specialty: str
     location_name: str
+    nurse_notes: str = ""
 
 @router.post("/{session_id}/confirm-booking")
 def confirm_booking(session_id: str, body: ConfirmBookingRequest):
@@ -45,6 +46,7 @@ def confirm_booking(session_id: str, body: ConfirmBookingRequest):
         provider_phone=location.phone if location else None,
         provider_address=location.address if location else None,
         provider_hours=location.hours if location else None,
+        nurse_notes=body.nurse_notes,
     )
     # Remove existing booking for this referral index if present
     session.bookings = [b for b in session.bookings if b.referral_index != body.referral_index]
