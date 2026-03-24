@@ -31,4 +31,5 @@ export const api = {
   sendSummary: (sessionId, method, contact) => request('POST', `/session/${sessionId}/send-summary`, { method, contact }),
   getColocatedSuggestions: (sessionId) => request('GET', `/session/${sessionId}/colocated-suggestions`),
   getTransportResources: () => request('GET', '/transport-resources'),
+  getReminders: (sessionId) => request('GET', `/session/${sessionId}/reminders`),
 };

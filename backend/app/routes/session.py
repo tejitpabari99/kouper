@@ -44,6 +44,15 @@ def get_colocated_suggestions(session_id: str):
 
     return find_colocated_providers(provider_names)
 
+@router.get("/{session_id}/reminders")
+def get_reminders(session_id: str):
+    """Return all scheduled reminder records for this session."""
+    session = store.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"reminders": [r.model_dump() for r in session.reminders]}
+
+
 @router.delete("/{session_id}")
 def delete_session(session_id: str):
     deleted = store.delete(session_id)

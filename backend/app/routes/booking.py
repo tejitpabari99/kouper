@@ -5,6 +5,7 @@ from ..session_store import store
 from ..models.session import CompletedBooking
 from ..logic.availability import check_availability
 from ..logic.appointment_type import determine_appointment_type
+from ..logic.reminders import schedule_reminders
 from ..models.patient import PatientData
 
 router = APIRouter(prefix="/session", tags=["booking"])
@@ -52,6 +53,12 @@ def confirm_booking(session_id: str, body: ConfirmBookingRequest):
     session.bookings = [b for b in session.bookings if b.referral_index != body.referral_index]
     # Then append the new booking
     session.bookings.append(booking)
+
+    # Schedule reminders for this booking
+    if session.patient_preferences:
+        patient_name = session.patient.get("name", "Patient") if session.patient else "Patient"
+        new_reminders = schedule_reminders(booking, session.patient_preferences, patient_name)
+        session.reminders.extend(new_reminders)
 
     # Check if all referrals are booked
     total_referrals = len(session.patient.get("referred_providers", []))
