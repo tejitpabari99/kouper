@@ -25,10 +25,16 @@
       error = e.message;
     }
     // Load cached appointment info
-    const key = `appointment_info_${sid}_${idx}`;
-    const cached = sessionStorage.getItem(key);
+    const cacheKey = `appointment_info_${sid}_${idx}`;
+    const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       try { apptInfo = JSON.parse(cached); } catch(_) {}
+    } else {
+      const prov = $page.url.searchParams.get('provider') || '';
+      const spec = $page.url.searchParams.get('specialty') || '';
+      if (prov && spec) {
+        try { apptInfo = await api.getAppointmentInfo(sid, prov, spec); } catch(_) {}
+      }
     }
   });
 
@@ -87,9 +93,15 @@
     <div class="detail-row"><span class="label">Location</span><span class="value">{location}</span></div>
 
     {#if apptInfo}
-      <div class="detail-row"><span class="label">Appointment Type</span><span class="value">{apptInfo.appointment_type === 'ESTABLISHED' ? 'Established Patient' : 'New Patient'}</span></div>
+      <div class="detail-row">
+        <span class="label">Type</span>
+        <span class="value">
+          <span class="badge {apptInfo.appointment_type === 'NEW' ? 'badge-green' : 'badge-blue'}">{apptInfo.appointment_type}</span>
+          <span style="font-size:12px; color:#6b7280; margin-left:6px">{apptInfo.appointment_type === 'NEW' ? 'First visit with this provider' : 'Follow-up visit'}</span>
+        </span>
+      </div>
       <div class="detail-row"><span class="label">Duration</span><span class="value">{apptInfo.duration_minutes} minutes</span></div>
-      <div class="detail-row"><span class="label">Arrive Early</span><span class="value">{apptInfo.arrive_early_minutes} minutes before appointment</span></div>
+      <div class="detail-row"><span class="label">Arrive Early</span><span class="value">{apptInfo.arrive_early_minutes} min before appointment</span></div>
     {/if}
   </div>
 

@@ -11,16 +11,18 @@
   $: location = $page.url.searchParams.get('location') || '';
   $: specialty = $page.url.searchParams.get('specialty') || '';
 
-  const LANGUAGES = ['English','Spanish','Portuguese','French','Haitian Creole','Vietnamese','Tagalog','Korean','Mandarin','Cantonese','Arabic','Russian','Polish','Other'];
+  const LANGUAGES = ['English', 'Spanish', 'Portuguese', 'French', 'Mandarin', 'Cantonese', 'Vietnamese', 'Tagalog', 'Korean', 'Russian', 'Arabic', 'Hindi', 'Other'];
 
   const CONTACT_TIMES = [
-    { value: 'morning', label: 'Morning', sub: '8am–12pm' },
-    { value: 'afternoon', label: 'Afternoon', sub: '12pm–5pm' },
-    { value: 'evening', label: 'Evening', sub: '5pm–8pm' },
+    ['8am-10am', '8\u201310 AM'],
+    ['10am-12pm', '10 AM\u201312 PM'],
+    ['12pm-3pm', '12\u20133 PM'],
+    ['3pm-6pm', '3\u20136 PM'],
+    ['after-6pm', 'After 6 PM'],
   ];
 
   let contactMethod = 'phone';
-  let bestContactTime = 'morning';
+  let bestContactTime = '8am-10am';
   let language = 'English';
   let languageOther = '';
   let locationPreference = 'none';
@@ -93,11 +95,10 @@
     <div class="form-row">
       <label>Best Contact Time</label>
       <div class="radio-group">
-        {#each CONTACT_TIMES as opt}
-          <label class="radio-option" class:selected={bestContactTime === opt.value} style="cursor:pointer">
-            <input type="radio" bind:group={bestContactTime} value={opt.value} style="display:none" />
-            <span>{opt.label}</span>
-            <span style="display:block; font-size:11px; color:#9ca3af; margin-top:1px">{opt.sub}</span>
+        {#each CONTACT_TIMES as [val, label]}
+          <label class="radio-option" class:selected={bestContactTime === val} style="cursor:pointer">
+            <input type="radio" bind:group={bestContactTime} value={val} style="display:none" />
+            {label}
           </label>
         {/each}
       </div>
@@ -154,6 +155,10 @@
         <div style="padding:10px 12px; background:#4f46e5; border-radius:6px; color:white; font-size:13px; line-height:1.5">
           <div style="font-weight:700; margin-bottom:4px; font-size:11px; text-transform:uppercase; opacity:0.8">Tell the patient:</div>
           "We'll have someone call you within 24 hours to arrange your transportation to this appointment."
+        </div>
+        <div style="margin-top:8px; padding:12px; background:#fef3c7; border:1px solid #fde68a; border-radius:6px; font-size:13px; color:#92400e">
+          <strong>Script for patient:</strong><br/>
+          "I've noted that you'll need transportation assistance for this appointment. Our care team will contact you within 2 business days to arrange a ride. Please confirm your pick-up address when they call."
         </div>
       </div>
     {/if}

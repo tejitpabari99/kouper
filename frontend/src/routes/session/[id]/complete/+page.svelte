@@ -8,8 +8,12 @@
   let summary = null;
   let error = '';
   let showDeleteConfirm = false;
-  let sendSuccess = '';
-  let sending = '';
+  let deleting = false;
+  let sendMethod = 'text';
+  let sendContact = '';
+  let sending = false;
+  let sendResult = null;
+  let sendError = '';
 
   onMount(async () => {
     try {
@@ -28,23 +32,24 @@
   }
 
   async function deleteSession() {
+    deleting = true;
     try {
       await api.deleteSession(sid);
-      goto('/');
-    } catch(e) {
-      // show error
-    }
+    } catch(_) {}
+    goto('/');
   }
 
-  async function sendSummary(method) {
-    sending = method;
+  async function sendToPatient() {
+    sending = true;
+    sendError = '';
+    sendResult = null;
     try {
-      const res = await api.sendSummary(sid, method);
-      sendSuccess = res.message;
+      const res = await api.sendSummary(sid, sendMethod, sendContact);
+      sendResult = res.message;
     } catch(e) {
-      sendSuccess = `Queued (${method}) — integration pending.`;
+      sendError = e.message;
     } finally {
-      sending = '';
+      sending = false;
     }
   }
 </script>
@@ -103,64 +108,66 @@
     {/if}
 
     <div class="card">
-      <div style="font-size:15px; font-weight:600; margin-bottom:12px; color:#374151">Session Actions</div>
-      <div style="display:flex; flex-direction:column; gap:8px">
-        {#each (summary?.bookings || []) as booking, i}
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f9fafb; border-radius:6px">
-            <span style="font-size:13px; color:#374151">{booking.specialty} — {booking.provider_name}</span>
-            <button class="btn btn-secondary" style="font-size:12px; padding:4px 10px" on:click={() => goto(`/session/${sid}/referral/${booking.referral_index}/provider`)}>Edit</button>
-          </div>
-        {/each}
-        <button class="btn btn-secondary" on:click={() => goto(`/session/${sid}`)}>Edit Entire Session</button>
-        <button class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;cursor:pointer" on:click={() => showDeleteConfirm = true}>🗑 Delete Session</button>
+      <div style="font-size:15px; font-weight:600; margin-bottom:16px; color:#374151">Send Summary to Patient</div>
+      <div class="form-row">
+        <label>Method</label>
+        <div class="radio-group">
+          {#each [['text','Text Message'],['email','Email']] as [val,label]}
+            <label class="radio-option" class:selected={sendMethod === val} style="cursor:pointer">
+              <input type="radio" bind:group={sendMethod} value={val} style="display:none"/>
+              {label}
+            </label>
+          {/each}
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label>{sendMethod === 'text' ? 'Phone Number' : 'Email Address'}</label>
+        <input bind:value={sendContact} placeholder={sendMethod === 'text' ? '555-123-4567' : 'patient@example.com'} />
+      </div>
+      {#if sendResult}
+        <div style="margin-top:10px; color:#16a34a; font-size:13px; font-weight:600">&#10003; {sendResult}</div>
+      {/if}
+      {#if sendError}
+        <div class="error-msg">{sendError}</div>
+      {/if}
+      <div style="margin-top:12px">
+        <button class="btn btn-primary" on:click={sendToPatient} disabled={sending || !sendContact.trim()}>
+          {sending ? 'Sending...' : 'Send Summary \u2192'}
+        </button>
       </div>
     </div>
 
-    <div class="card">
-      <div style="font-size:15px; font-weight:600; margin-bottom:12px; color:#374151">Send Summary to Patient</div>
-      {#if sendSuccess}
-        <div style="padding:12px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; font-size:14px; color:#15803d">
-          ✓ {sendSuccess}
-          <div style="font-size:12px; color:#6b7280; margin-top:4px">Note: SMS/email integration (Twilio/SendGrid) not yet connected — this is a mock confirmation.</div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" on:click={printSummary}>&#128424; Print Summary</button>
+      <button class="btn btn-primary" on:click={startNew}>Start New Session</button>
+    </div>
+    <div style="text-align:center; margin-top:12px">
+      {#if showDeleteConfirm}
+        <div style="padding:12px; background:#fef2f2; border:1px solid #fca5a5; border-radius:8px; font-size:13px; margin-bottom:8px">
+          Delete this session permanently? This cannot be undone.
+          <div style="margin-top:8px; display:flex; gap:8px; justify-content:center">
+            <button class="btn btn-secondary" style="font-size:12px; padding:4px 12px" on:click={() => showDeleteConfirm = false}>Cancel</button>
+            <button style="font-size:12px; padding:4px 12px; background:#dc2626; color:white; border:none; border-radius:6px; cursor:pointer" on:click={deleteSession} disabled={deleting}>
+              {deleting ? 'Deleting...' : 'Yes, Delete'}
+            </button>
+          </div>
         </div>
       {:else}
-        <div style="display:flex; gap:8px">
-          <button class="btn btn-secondary" on:click={() => sendSummary('text')} disabled={sending}>
-            {sending === 'text' ? 'Sending...' : '📱 Send via Text'}
-          </button>
-          <button class="btn btn-secondary" on:click={() => sendSummary('email')} disabled={sending}>
-            {sending === 'email' ? 'Sending...' : '✉️ Send via Email'}
-          </button>
-        </div>
+        <button style="background:none; border:none; color:#9ca3af; font-size:12px; cursor:pointer; text-decoration:underline" on:click={() => showDeleteConfirm = true}>
+          Delete this session
+        </button>
       {/if}
-    </div>
-
-    <div class="nav-row">
-      <button class="btn btn-secondary" on:click={printSummary}>🖨️ Print Summary</button>
-      <button class="btn btn-primary" on:click={startNew}>Start New Session</button>
     </div>
   {:else if !error}
     <div style="color:#6b7280; font-size:14px">Loading summary...</div>
   {/if}
 </div>
 
-{#if showDeleteConfirm}
-  <div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:center;justify-content:center">
-    <div style="background:white;border-radius:12px;padding:24px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
-      <div style="font-size:18px;font-weight:700;margin-bottom:8px">Delete Session?</div>
-      <p style="color:#6b7280;font-size:14px;margin-bottom:20px">This will permanently delete all booking data for this patient. This cannot be undone.</p>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button class="btn btn-secondary" on:click={() => showDeleteConfirm = false}>Cancel</button>
-        <button style="background:#dc2626;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:14px;font-weight:600;cursor:pointer" on:click={deleteSession}>Delete</button>
-      </div>
-    </div>
-  </div>
-{/if}
-
 <style>
   @media print {
-    :global(.btn), :global(.nav-row), :global(button) { display: none !important; }
-    :global(.card) { box-shadow: none !important; border: 1px solid #e5e7eb !important; background: white !important; }
+    :global(.screen > div:first-child) { display: block !important; }
+    :global(button), :global(.nav-row) { display: none !important; }
+    :global(.card) { break-inside: avoid; box-shadow: none !important; border: 1px solid #e5e7eb !important; background: white !important; }
     :global(.screen) { max-width: 100% !important; padding: 0 !important; }
     :global(body) { background: white !important; }
   }

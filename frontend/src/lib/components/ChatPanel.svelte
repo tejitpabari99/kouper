@@ -42,7 +42,8 @@
     }, 15000);
 
     try {
-      const res = await api.sendMessage(sessionId, msg, context);
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out after 30s')), 30000));
+      const res = await Promise.race([api.sendMessage(sessionId, msg, context), timeout]);
       clearTimeout(slowTimer);
       clearTimeout(timeoutTimer);
       slowWarning = false;
