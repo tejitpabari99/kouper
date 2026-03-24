@@ -1,0 +1,27 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from .routes import session, patient, chat, preferences, booking
+
+app = FastAPI(
+    title="Kouper Health Care Coordinator API",
+    description="API for the Mini Care Coordinator Assistant",
+    version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:4173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(session.router)
+app.include_router(patient.router)
+app.include_router(chat.router)
+app.include_router(preferences.router)
+app.include_router(booking.router)
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "Care Coordinator API"}
