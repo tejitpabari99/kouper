@@ -9,7 +9,7 @@ router = APIRouter(prefix="/session", tags=["preferences"])
 
 class PreferencesRequest(BaseModel):
     contact_method: Literal["phone", "text", "email"] = "phone"
-    best_contact_time: Literal["morning", "afternoon", "evening"] = "morning"
+    best_contact_time: str = "morning"
     language: str = "English"
     location_preference: Literal["home", "work", "none"] = "none"
     transportation_needs: bool = False

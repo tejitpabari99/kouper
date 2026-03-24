@@ -43,3 +43,48 @@ def test_cancellations_dont_count():
     """Grey's cancellation on 11/25/2024 should not count; result is still NEW."""
     result = determine_appointment_type(JOHN_DOE, "Primary Care")
     assert result.type == "NEW"
+
+
+def test_patient_with_no_appointment_history():
+    """A patient with an empty appointments list should always be NEW."""
+    patient = PatientData(
+        id=2, name="Jane Smith", dob="06/15/1990", pcp="Dr. Chris Perry",
+        ehrId="5678efgh",
+        referred_providers=[ReferredProvider(specialty="Primary Care")],
+        appointments=[],
+    )
+    result = determine_appointment_type(patient, "Primary Care")
+    assert result.type == "NEW"
+    assert result.duration_minutes == 30
+    assert result.arrival_minutes_early == 30
+
+
+def test_appointment_type_surgery():
+    """A patient with no surgical history should be NEW for Surgery."""
+    patient = PatientData(
+        id=3, name="Bob Builder", dob="03/20/1980", pcp="Dr. Meredith Grey",
+        ehrId="9012ijkl",
+        referred_providers=[ReferredProvider(specialty="Surgery")],
+        appointments=[
+            Appointment(date="8/12/24", time="2:30pm", provider="Dr. Gregory House", status="completed"),
+        ],
+    )
+    result = determine_appointment_type(patient, "Surgery")
+    assert result.type == "NEW"
+
+
+def test_only_completed_count_for_established():
+    """A patient with a completed visit to Grey within 5 years should be ESTABLISHED for Primary Care."""
+    patient = PatientData(
+        id=4, name="Alice Walker", dob="09/10/1985", pcp="Dr. Meredith Grey",
+        ehrId="3456mnop",
+        referred_providers=[ReferredProvider(specialty="Primary Care")],
+        appointments=[
+            # Completed Primary Care visit within 5 years (2024 is within 5 years of 2026-03-24)
+            Appointment(date="5/10/24", time="10:00am", provider="Dr. Meredith Grey", status="completed"),
+            # Noshow should not affect outcome
+            Appointment(date="11/15/24", time="9:00am", provider="Dr. Meredith Grey", status="noshow"),
+        ],
+    )
+    result = determine_appointment_type(patient, "Primary Care")
+    assert result.type == "ESTABLISHED"

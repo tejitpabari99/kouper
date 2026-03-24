@@ -136,9 +136,13 @@
               <div style="font-size:13px; color:#374151">
                 <strong>{booking.provider_name}</strong> &mdash; {booking.location} &mdash; {booking.appointment_type}
               </div>
-              <!-- B9: appointment time note on booked cards -->
               <div style="font-size:12px; color:#9ca3af; margin-top:4px; font-style:italic">
                 The provider's office will contact the patient to confirm the appointment date and time.
+              </div>
+              <div style="margin-top:10px">
+                <button class="btn btn-secondary" style="font-size:12px; padding:4px 12px" on:click={() => bookReferral(idx)}>
+                  ✏ Edit Booking
+                </button>
               </div>
             {/if}
           {:else}
@@ -153,9 +157,8 @@
     <!-- B7: Complete Session button always visible, disabled when not all booked -->
     <div class="nav-row">
       <div></div>
-      {@const remaining = referrals.filter((_, i) => !bookedIndexes.has(i)).length}
       <button class="btn btn-success" on:click={finishSession} disabled={!allBooked}>
-        {allBooked ? 'Complete Session →' : `Complete Session (${remaining} referral${remaining !== 1 ? 's' : ''} remaining)`}
+        {#if allBooked}Complete Session →{:else}Complete Session ({referrals.filter((_, i) => !bookedIndexes.has(i)).length} referral{referrals.filter((_, i) => !bookedIndexes.has(i)).length !== 1 ? 's' : ''} remaining){/if}
       </button>
     </div>
   {:else if !error}

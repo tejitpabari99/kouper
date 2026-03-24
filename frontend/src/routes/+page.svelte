@@ -75,6 +75,10 @@
     loading = true;
     error = '';
     try {
+      // Delete any existing session for this patient before creating a new one
+      if (existingSession) {
+        try { await api.deleteSession(existingSession.session_id); } catch(_) {}
+      }
       const session = await api.createSession();
       createdSessionId = session.session_id;
       sessionId.set(createdSessionId);
@@ -118,7 +122,7 @@
     <div style="background:#fff; border-radius:12px; padding:28px 32px; max-width:420px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18)">
       <div style="font-weight:700; font-size:16px; margin-bottom:10px">Start a new session?</div>
       <div style="font-size:14px; color:#374151; margin-bottom:20px">
-        This will create a new session. The existing session will still be accessible.
+        This will delete the existing session and start fresh. Only one session per patient is allowed.
       </div>
       <div style="display:flex; gap:10px; justify-content:flex-end">
         <button class="btn btn-secondary" on:click={cancelNewSessionModal}>Cancel</button>
