@@ -5,6 +5,7 @@
   marked.setOptions({ breaks: true });
 
   export let sessionId;
+  export let context = '';
 
   let messages = [];
   let input = '';
@@ -18,7 +19,7 @@
     messages = [...messages, { role: 'user', text: msg }];
     sending = true;
     try {
-      const res = await api.sendMessage(sessionId, msg);
+      const res = await api.sendMessage(sessionId, msg, context);
       messages = [...messages, { role: 'assistant', text: res.response }];
     } catch (e) {
       messages = [...messages, { role: 'assistant', text: `Error: ${e.message}` }];

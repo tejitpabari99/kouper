@@ -29,6 +29,18 @@
   $: bookings = state?.bookings || [];
   $: bookedIndexes = new Set(bookings.map(b => b.referral_index));
   $: allBooked = referrals.length > 0 && referrals.every((_, i) => bookedIndexes.has(i));
+
+  $: chatContext = state ? [
+    `Screen: Referrals Overview (Step 2)`,
+    `Patient: ${state.patient?.name} | DOB: ${state.patient?.dob} | PCP: ${state.patient?.pcp}`,
+    ...referrals.map((r, i) => {
+      const b = bookings.find(b => b.referral_index === i);
+      return b
+        ? `Referral ${i+1} (${r.specialty}): BOOKED — ${b.provider_name} at ${b.location} (${b.appointment_type})`
+        : `Referral ${i+1} (${r.specialty}): Not yet booked${r.provider ? ` — referred to ${r.provider}` : ' — provider TBD'}`;
+    }),
+    state.patient?.appointments?.some(a => a.status === 'noshow') ? 'Note: Patient has a previous no-show on record.' : '',
+  ].filter(Boolean).join('\n') : '';
 </script>
 
 <div class="screen">
@@ -93,5 +105,5 @@
     <div style="color:#6b7280; font-size:14px">Loading...</div>
   {/if}
 
-  <ChatPanel sessionId={sid} />
+  <ChatPanel sessionId={sid} context={chatContext} />
 </div>

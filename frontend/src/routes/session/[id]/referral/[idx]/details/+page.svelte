@@ -81,6 +81,20 @@
   function changeProvider() {
     goto(`/session/${sid}/referral/${idx}/provider`);
   }
+
+  $: chatContext = [
+    `Screen: Appointment Details (Step 4) — Referral ${idx + 1}`,
+    `Provider: ${providerName}`,
+    `Specialty: ${specialty}`,
+    apptInfo ? [
+      `Appointment type: ${apptInfo.appointment_type} (${apptInfo.duration_minutes} min, arrive ${apptInfo.arrive_early_minutes} min early)`,
+      `Reason: ${apptInfo.reason}`,
+      apptInfo.locations?.length
+        ? `Available locations: ${apptInfo.locations.map(l => `${l.name} — ${Array.isArray(l.days) ? l.days.join(', ') : l.days} ${l.hours} — ${l.address} — ${l.phone}`).join('; ')}`
+        : '',
+      selectedLocation ? `Selected location: ${selectedLocation}` : 'Location not yet selected',
+    ].filter(Boolean).join('\n') : 'Loading appointment info...',
+  ].filter(Boolean).join('\n');
 </script>
 
 <div class="screen">
@@ -179,7 +193,7 @@
     </button>
   </div>
 
-  <ChatPanel sessionId={sid} />
+  <ChatPanel sessionId={sid} context={chatContext} />
 </div>
 
 <style>

@@ -18,7 +18,7 @@ export const api = {
   createSession: () => request('POST', '/session'),
   startSession: (sessionId, patientId) => request('POST', `/session/${sessionId}/start/${patientId}`),
   getState: (sessionId) => request('GET', `/session/${sessionId}/state`),
-  sendMessage: (sessionId, message) => request('POST', `/session/${sessionId}/message`, { message }),
+  sendMessage: (sessionId, message, pageContext = '') => request('POST', `/session/${sessionId}/message`, { message, page_context: pageContext }),
   savePreferences: (sessionId, prefs) => request('POST', `/session/${sessionId}/preferences`, prefs),
   confirmBooking: (sessionId, data) => request('POST', `/session/${sessionId}/confirm-booking`, data),
   getSummary: (sessionId) => request('GET', `/session/${sessionId}/summary`),

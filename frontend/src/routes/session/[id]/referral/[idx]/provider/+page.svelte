@@ -107,6 +107,16 @@
       continueToDetails();
     }
   }
+
+  $: chatContext = [
+    `Screen: Provider Selection (Step 3) — Referral ${idx + 1}`,
+    specialty ? `Specialty needed: ${specialty}` : '',
+    namedProvider ? `Referred provider from chart: ${namedProvider}` : '',
+    selectedProvider ? `Currently selected: ${selectedProvider}` : 'No provider selected yet',
+    providers.length
+      ? `Available providers: ${providers.map(p => `${p.name} (${p.locations?.map(l => l.name).join(', ')})`).join('; ')}`
+      : 'Providers loading...',
+  ].filter(Boolean).join('\n');
 </script>
 
 <div class="screen">
@@ -204,7 +214,7 @@
     </div>
   {/if}
 
-  <ChatPanel sessionId={sid} />
+  <ChatPanel sessionId={sid} context={chatContext} />
 </div>
 
 <style>

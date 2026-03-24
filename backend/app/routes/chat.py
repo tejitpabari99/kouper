@@ -7,6 +7,7 @@ router = APIRouter(prefix="/session", tags=["chat"])
 
 class MessageRequest(BaseModel):
     message: str
+    page_context: str = ""
 
 @router.post("/{session_id}/message")
 def send_message(session_id: str, body: MessageRequest):
@@ -19,6 +20,7 @@ def send_message(session_id: str, body: MessageRequest):
             conversation_history=session.conversation_history,
             patient=session.patient,
             session=session,
+            page_context=body.page_context,
         )
         session.conversation_history = updated_history
         store.update(session)

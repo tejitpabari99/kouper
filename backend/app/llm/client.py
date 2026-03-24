@@ -8,7 +8,7 @@ from .tool_executor import execute_tool
 
 load_dotenv('/root/projects/kouper/.env')
 
-def chat(message: str, conversation_history: list, patient: Optional[dict] = None, session=None) -> tuple[str, list]:
+def chat(message: str, conversation_history: list, patient: Optional[dict] = None, session=None, page_context: str = "") -> tuple[str, list]:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY not set")
@@ -16,6 +16,8 @@ def chat(message: str, conversation_history: list, patient: Optional[dict] = Non
 
     patient_context = build_patient_context(patient)
     system_prompt = build_system_prompt(patient_context, session=session)
+    if page_context:
+        system_prompt += f"\n\n## Current Screen Context\n{page_context}"
     history = conversation_history + [{"role": "user", "content": message}]
 
     while True:

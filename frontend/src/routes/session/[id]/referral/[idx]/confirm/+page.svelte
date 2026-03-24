@@ -46,6 +46,21 @@
   function goBack() {
     goto(`/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`);
   }
+
+  $: chatContext = [
+    `Screen: Booking Confirmation (Step 6) — Referral ${idx + 1}`,
+    state?.patient ? `Patient: ${state.patient.name} (DOB: ${state.patient.dob})` : '',
+    `Provider: ${providerName}`,
+    `Specialty: ${specialty}`,
+    `Location: ${location}`,
+    prefs ? [
+      `Contact: ${prefs.contact_method} at ${prefs.best_contact_time}`,
+      `Language: ${prefs.language}`,
+      prefs.transportation_needs ? 'Transportation assistance needed: YES' : '',
+      prefs.notes ? `Notes: ${prefs.notes}` : '',
+    ].filter(Boolean).join('\n') : '',
+    'Awaiting nurse confirmation to finalize booking.',
+  ].filter(Boolean).join('\n');
 </script>
 
 <div class="screen">
@@ -91,5 +106,5 @@
     </button>
   </div>
 
-  <ChatPanel sessionId={sid} />
+  <ChatPanel sessionId={sid} context={chatContext} />
 </div>

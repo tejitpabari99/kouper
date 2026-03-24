@@ -43,6 +43,18 @@
   function goBack() {
     goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}`);
   }
+
+  $: chatContext = [
+    `Screen: Patient Preferences (Step 5) — Referral ${idx + 1}`,
+    `Provider: ${providerName}`,
+    `Location: ${location}`,
+    `Specialty: ${specialty}`,
+    `Preferred contact method: ${contactMethod}`,
+    `Best contact time: ${bestContactTime}`,
+    `Language: ${language}`,
+    `Transportation needed: ${transportationNeeds ? 'Yes — needs ride assistance' : 'No'}`,
+    notes ? `Additional notes: ${notes}` : '',
+  ].filter(Boolean).join('\n');
 </script>
 
 <div class="screen">
@@ -139,5 +151,5 @@
     </button>
   </div>
 
-  <ChatPanel sessionId={sid} />
+  <ChatPanel sessionId={sid} context={chatContext} />
 </div>
