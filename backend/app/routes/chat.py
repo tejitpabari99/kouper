@@ -18,6 +18,7 @@ def send_message(session_id: str, body: MessageRequest):
             message=body.message,
             conversation_history=session.conversation_history,
             patient=session.patient,
+            session=session,
         )
         session.conversation_history = updated_history
         store.update(session)
