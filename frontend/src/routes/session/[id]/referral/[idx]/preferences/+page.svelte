@@ -1,6 +1,7 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import { api } from '$lib/api/client.js';
   import ChatPanel from '$lib/components/ChatPanel.svelte';
 
@@ -10,6 +11,7 @@
   $: providerName = $page.url.searchParams.get('provider') || '';
   $: location = $page.url.searchParams.get('location') || '';
   $: specialty = $page.url.searchParams.get('specialty') || '';
+  $: scheduledDatetime = $page.url.searchParams.get('scheduled_datetime') || '';
 
   const LANGUAGES = ['English', 'Spanish', 'Portuguese', 'French', 'Mandarin', 'Cantonese', 'Vietnamese', 'Tagalog', 'Korean', 'Russian', 'Arabic', 'Hindi', 'Other'];
 
@@ -33,6 +35,10 @@
 
   let transportResources = [];
   let transportResourcesLoading = false;
+
+  onMount(() => {
+    api.logNurseEvent(sid, 'step_visited', { step: 'patient_preferences', referral_index: idx });
+  });
 
   async function loadTransportResources() {
     if (transportResources.length > 0) return;
@@ -60,7 +66,9 @@
         transportation_needs: transportationNeeds,
         notes,
       });
-      goto(`/session/${sid}/referral/${idx}/confirm?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(location)}&specialty=${encodeURIComponent(specialty)}`);
+      const confirmParams = new URLSearchParams({ provider: providerName, location, specialty });
+      if (scheduledDatetime) confirmParams.set('scheduled_datetime', scheduledDatetime);
+      goto(`/session/${sid}/referral/${idx}/confirm?${confirmParams}`);
     } catch (e) {
       error = e.message;
     } finally {
@@ -69,7 +77,9 @@
   }
 
   function goBack() {
-    goto(`/session/${sid}/referral/${idx}/details?provider=${encodeURIComponent(providerName)}`);
+    const params = new URLSearchParams({ provider: providerName, location, specialty });
+    if (scheduledDatetime) params.set('scheduled_datetime', scheduledDatetime);
+    goto(`/session/${sid}/referral/${idx}/schedule?${params}`);
   }
 
   $: chatContext = [

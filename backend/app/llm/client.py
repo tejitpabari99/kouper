@@ -55,6 +55,7 @@ def chat(message: str, conversation_history: list, patient: Optional[dict] = Non
                     tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
                     append_audit_entry(AuditLogEntry(
                         timestamp=datetime.utcnow().isoformat() + "Z",
+                        type="llm",
                         session_id=session.session_id if session else "unknown",
                         tool_name=block.name,
                         tool_input=dict(block.input) if hasattr(block.input, '__iter__') else {},

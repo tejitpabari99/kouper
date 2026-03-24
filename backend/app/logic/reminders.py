@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import List, Optional
 from ..models.session import CompletedBooking, PatientPreferences, ReminderRecord
 
@@ -24,6 +24,21 @@ def schedule_reminders(
 
     now = datetime.utcnow().isoformat() + "Z"
 
+    # If booking has a real date, calculate actual reminder dates
+    scheduled_date_str = getattr(booking, 'scheduled_date', None)
+    if scheduled_date_str:
+        try:
+            # scheduled_date may be a full ISO datetime string like "2026-04-02T09:00:00"
+            appt_date = date.fromisoformat(scheduled_date_str[:10])
+            reminder_48h = (appt_date - timedelta(days=2)).isoformat()
+            reminder_day_of = appt_date.isoformat()
+        except ValueError:
+            reminder_48h = "pending_date"
+            reminder_day_of = "pending_date"
+    else:
+        reminder_48h = "pending_date"
+        reminder_day_of = "pending_date"
+
     return [
         ReminderRecord(
             booking_referral_index=booking.referral_index,
@@ -44,7 +59,7 @@ def schedule_reminders(
             channel=channel,
             contact_value=contact_value,
             status="queued",
-            scheduled_for="pending_date",
+            scheduled_for=reminder_48h,
             message_template=(
                 f"Hi {patient_name}, you have an appointment with {provider} at {location} in 2 days. "
                 f"Please arrive {arrive} minutes early."
@@ -56,7 +71,7 @@ def schedule_reminders(
             channel=channel,
             contact_value=contact_value,
             status="queued",
-            scheduled_for="pending_date",
+            scheduled_for=reminder_day_of,
             message_template=(
                 f"Hi {patient_name}, reminder: your appointment with {provider} is today at {location}. "
                 f"Arrive {arrive} minutes early."

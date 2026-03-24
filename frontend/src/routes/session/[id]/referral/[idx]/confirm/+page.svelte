@@ -11,6 +11,7 @@
   $: providerName = $page.url.searchParams.get('provider') || '';
   $: location = $page.url.searchParams.get('location') || '';
   $: specialty = $page.url.searchParams.get('specialty') || '';
+  $: scheduledDatetime = $page.url.searchParams.get('scheduled_datetime') || '';
 
   let state = null;
   let confirming = false;
@@ -33,6 +34,9 @@
     } catch (e) {
       error = e.message;
     }
+
+    api.logNurseEvent(sid, 'step_visited', { step: 'booking_confirmation', referral_index: idx });
+
     // Load cached appointment info
     const cacheKey = `appointment_info_${sid}_${idx}`;
     const cached = sessionStorage.getItem(cacheKey);
@@ -59,6 +63,7 @@
         specialty: specialty,
         location_name: location,
         nurse_notes: nurseNotes,
+        scheduled_datetime: scheduledDatetime || undefined,
       });
       bookingConfirmed = true;
     } catch (e) {
@@ -127,6 +132,13 @@
     <div class="detail-row"><span class="label">Provider</span><span class="value">{providerName}</span></div>
     <div class="detail-row"><span class="label">Specialty</span><span class="value">{specialty}</span></div>
     <div class="detail-row"><span class="label">Location</span><span class="value">{location}</span></div>
+
+    {#if scheduledDatetime}
+      <div class="detail-row">
+        <span class="label">Appointment</span>
+        <span class="value">{new Date(scheduledDatetime).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+      </div>
+    {/if}
 
     {#if apptInfo}
       <div class="detail-row">

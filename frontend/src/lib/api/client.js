@@ -37,4 +37,9 @@ export const api = {
   getAuditLog: (n = 100) => request('GET', `/audit/log?n=${n}`),
   submitErrorFeedback: (data) => request('POST', '/feedback/error', data),
   submitBookingFeedback: (data) => request('POST', '/feedback/booking', data),
+  logNurseEvent: (sessionId, action, detail = {}) => {
+    // Fire-and-forget — never let audit failures block the UI
+    request('POST', '/audit/event', { session_id: sessionId, action, detail }).catch(() => {});
+  },
+  getAppointmentSlots: (sessionId, provider, location) => request('GET', `/session/${sessionId}/appointment-slots?provider=${encodeURIComponent(provider)}&location=${encodeURIComponent(location)}`),
 };

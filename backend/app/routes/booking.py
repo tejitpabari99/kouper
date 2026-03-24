@@ -1,12 +1,14 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 from ..session_store import store
 from ..models.session import CompletedBooking
 from ..logic.availability import check_availability
 from ..logic.appointment_type import determine_appointment_type
 from ..logic.reminders import schedule_reminders
 from ..models.patient import PatientData
+from ..audit_log import append_audit_entry, AuditLogEntry
 
 router = APIRouter(prefix="/session", tags=["booking"])
 
@@ -16,6 +18,7 @@ class ConfirmBookingRequest(BaseModel):
     specialty: str
     location_name: str
     nurse_notes: str = ""
+    scheduled_datetime: Optional[str] = None
 
 @router.post("/{session_id}/confirm-booking")
 def confirm_booking(session_id: str, body: ConfirmBookingRequest):
@@ -49,6 +52,9 @@ def confirm_booking(session_id: str, body: ConfirmBookingRequest):
         provider_hours=location.hours if location else None,
         nurse_notes=body.nurse_notes,
     )
+    if body.scheduled_datetime:
+        booking.scheduled_date = body.scheduled_datetime
+
     # Remove existing booking for this referral index if present
     session.bookings = [b for b in session.bookings if b.referral_index != body.referral_index]
     # Then append the new booking
@@ -69,6 +75,19 @@ def confirm_booking(session_id: str, body: ConfirmBookingRequest):
         session.active_referral_index = body.referral_index + 1
 
     store.update(session)
+    append_audit_entry(AuditLogEntry(
+        timestamp=datetime.utcnow().isoformat() + "Z",
+        type="system", actor="system",
+        action="booking_confirmed",
+        session_id=session_id,
+        detail={
+            "provider": body.provider_name,
+            "specialty": body.specialty,
+            "location": body.location_name,
+            "referral_index": body.referral_index,
+            "appointment_type": appt_type.type,
+        },
+    ))
     return booking
 
 @router.get("/{session_id}/summary")

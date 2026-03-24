@@ -4,6 +4,7 @@ from typing import Literal
 from datetime import datetime
 from ..session_store import store
 from ..models.session import PatientPreferences
+from ..audit_log import append_audit_entry, AuditLogEntry
 
 router = APIRouter(prefix="/session", tags=["preferences"])
 
@@ -36,4 +37,11 @@ def save_preferences(session_id: str, body: PreferencesRequest):
     )
     session.patient_preferences = prefs
     store.update(session)
+    append_audit_entry(AuditLogEntry(
+        timestamp=datetime.utcnow().isoformat() + "Z",
+        type="system", actor="system",
+        action="preferences_saved",
+        session_id=session_id,
+        detail={"contact_method": body.contact_method, "transportation_needs": body.transportation_needs},
+    ))
     return prefs

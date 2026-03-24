@@ -46,6 +46,8 @@
       const match = findMatchingProvider(raw, providers);
       if (match) selectedProvider = match.name;
     }
+
+    api.logNurseEvent(sid, 'step_visited', { step: 'provider_selection', referral_index: idx });
   });
 
   function findMatchingProvider(raw, list) {
@@ -68,6 +70,7 @@
   function selectCard(providerName) {
     selectedProvider = providerName;
     navError = '';
+    api.logNurseEvent(sid, 'provider_selected', { provider: providerName, referral_index: idx });
   }
 
   const ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];

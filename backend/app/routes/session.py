@@ -1,12 +1,20 @@
 from fastapi import APIRouter, HTTPException
+from datetime import datetime
 from ..session_store import store
 from ..logic.colocated_providers import find_colocated_providers
+from ..audit_log import append_audit_entry, AuditLogEntry
 
 router = APIRouter(prefix="/session", tags=["session"])
 
 @router.post("")
 def create_session():
     session = store.create()
+    append_audit_entry(AuditLogEntry(
+        timestamp=datetime.utcnow().isoformat() + "Z",
+        type="system", actor="system",
+        action="session_created",
+        session_id=session.session_id,
+    ))
     return {"session_id": session.session_id}
 
 @router.get("/{session_id}/state")

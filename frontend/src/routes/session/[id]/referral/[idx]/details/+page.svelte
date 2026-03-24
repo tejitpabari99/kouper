@@ -28,6 +28,8 @@
       error = e.message;
     }
 
+    api.logNurseEvent(sid, 'step_visited', { step: 'appointment_details', referral_index: idx });
+
     // Try sessionStorage first (pre-fetched by Step 3 guard C3)
     const key = `appointment_info_${sid}_${idx}`;
     const cached = sessionStorage.getItem(key);
@@ -75,7 +77,7 @@
 
   function proceed() {
     if (!selectedLocation) return;
-    goto(`/session/${sid}/referral/${idx}/preferences?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(selectedLocation)}&specialty=${encodeURIComponent(specialty)}`);
+    goto(`/session/${sid}/referral/${idx}/schedule?provider=${encodeURIComponent(providerName)}&location=${encodeURIComponent(selectedLocation)}&specialty=${encodeURIComponent(specialty)}`);
   }
 
   function goBack() {
@@ -240,7 +242,7 @@
   <div class="nav-row">
     <button class="btn btn-secondary" on:click={goBack}>← Back</button>
     <button class="btn btn-primary" on:click={proceed} disabled={!selectedLocation || apptLoading}>
-      Next → Patient Preferences
+      Next → Schedule Appointment
     </button>
   </div>
 

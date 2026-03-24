@@ -18,6 +18,8 @@
       error = e.message;
     }
 
+    api.logNurseEvent(sid, 'step_visited', { step: 'referrals_overview' });
+
     // Check dismissed state from sessionStorage
     colocatedDismissed = sessionStorage.getItem(`coloc_dismissed_${sid}`) === 'true';
 

@@ -1,12 +1,39 @@
-from fastapi import FastAPI
+import time, re
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import session, patient, chat, preferences, booking, appointment_info, providers, distance, send_summary, audit, transport, outcomes, feedback
+from .routes import session, patient, chat, preferences, booking, appointment_info, providers, distance, send_summary, audit, transport, outcomes, feedback, slots
 
 app = FastAPI(
     title="Kouper Health Care Coordinator API",
     description="API for the Mini Care Coordinator Assistant",
     version="1.0.0",
 )
+
+@app.middleware("http")
+async def audit_middleware(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    try:
+        # Extract session_id from paths like /session/{uuid}/...
+        path = str(request.url.path)
+        session_match = re.search(r'/session/([0-9a-f-]{36})', path)
+        sid = session_match.group(1) if session_match else None
+        # Skip audit log endpoint itself to avoid recursion
+        if not path.startswith('/audit'):
+            from .audit_log import append_audit_entry, AuditLogEntry
+            append_audit_entry(AuditLogEntry(
+                timestamp=__import__('datetime').datetime.utcnow().isoformat() + "Z",
+                type="api",
+                actor="api",
+                session_id=sid,
+                http_method=request.method,
+                http_path=path,
+                http_status=response.status_code,
+                duration_ms=int((time.time() - start) * 1000),
+            ))
+    except Exception:
+        pass  # audit must never crash requests
+    return response
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +57,7 @@ app.include_router(audit.router)
 app.include_router(transport.router)
 app.include_router(outcomes.router)
 app.include_router(feedback.router)
+app.include_router(slots.router)
 
 @app.get("/health")
 def health():

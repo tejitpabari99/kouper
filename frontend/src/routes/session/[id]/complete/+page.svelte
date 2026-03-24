@@ -79,6 +79,7 @@
     } catch (e) {
       error = e.message;
     }
+    api.logNurseEvent(sid, 'step_visited', { step: 'session_complete' });
   });
 
   function startNew() {
