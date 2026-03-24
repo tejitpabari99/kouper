@@ -1,15 +1,14 @@
 """
-Feedback store — writes error reports and booking feedback to .feedback.json.
+Feedback store — writes error reports and booking feedback to SQLite.
 In production, these would be routed to an email/Slack/PagerDuty integration.
 """
 import json
-import os
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, Field
 import uuid
 
-FEEDBACK_FILE = os.path.join(os.path.dirname(__file__), "../../.feedback.json")
+from .database import get_db
 
 
 class ErrorFeedback(BaseModel):
@@ -35,20 +34,14 @@ class BookingFeedback(BaseModel):
     logged_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
 
 
-def _load() -> list:
-    try:
-        with open(FEEDBACK_FILE, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-
-def _save(entries: list) -> None:
-    with open(FEEDBACK_FILE, "w") as f:
-        json.dump(entries, f, indent=2)
-
-
-def add_feedback(entry: ErrorFeedback | BookingFeedback) -> None:
-    entries = _load()
-    entries.append(entry.model_dump())
-    _save(entries)
+def add_feedback(entry: Union[ErrorFeedback, BookingFeedback]) -> None:
+    """Insert a feedback entry into SQLite."""
+    data = entry.model_dump()
+    feedback_type = data.get("type", "unknown")
+    created_at = datetime.utcnow().isoformat() + "Z"
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO feedback (type, data, created_at) VALUES (?, ?, ?)",
+            (feedback_type, json.dumps(data), created_at),
+        )
+        conn.commit()

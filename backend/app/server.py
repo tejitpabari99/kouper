@@ -2,12 +2,15 @@ import time, re
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import session, patient, chat, preferences, booking, appointment_info, providers, distance, send_summary, audit, transport, outcomes, feedback, slots, insurance
+from .database import init_db
 
 app = FastAPI(
     title="Kouper Health Care Coordinator API",
     description="API for the Mini Care Coordinator Assistant",
     version="1.0.0",
 )
+
+init_db()
 
 @app.middleware("http")
 async def audit_middleware(request: Request, call_next):
