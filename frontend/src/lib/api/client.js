@@ -26,4 +26,5 @@ export const api = {
   getSessionByPatient: (patientId) => request('GET', `/session/by-patient/${patientId}`),
   getProviders: (specialty, q) => request('GET', `/providers?specialty=${encodeURIComponent(specialty)}${q ? '&q=' + encodeURIComponent(q) : ''}`),
   getAppointmentInfo: (sessionId, provider, specialty) => request('GET', `/session/${sessionId}/appointment-info?provider=${encodeURIComponent(provider)}&specialty=${encodeURIComponent(specialty)}`),
+  getDistance: (fromAddress, providerAddress) => request('GET', `/distance?from_address=${encodeURIComponent(fromAddress)}&provider_address=${encodeURIComponent(providerAddress)}`),
 };

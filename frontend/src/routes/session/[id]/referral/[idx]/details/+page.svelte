@@ -13,6 +13,10 @@
   let apptInfo = null;
   let apptLoading = true;
   let selectedLocation = '';
+  let showDistance = false;
+  let patientAddress = '';
+  let distanceResult = null;
+  let distanceLoading = false;
 
   $: providerName = $page.url.searchParams.get('provider') || '';
   $: specialtyParam = $page.url.searchParams.get('specialty') || '';
@@ -82,6 +86,20 @@
     goto(`/session/${sid}/referral/${idx}/provider`);
   }
 
+  async function fetchDistance() {
+    if (!patientAddress.trim() || !selectedLocation) return;
+    distanceLoading = true;
+    distanceResult = null;
+    try {
+      const loc = apptInfo?.locations?.find(l => l.name === selectedLocation);
+      distanceResult = await api.getDistance(patientAddress, loc?.address || selectedLocation);
+    } catch(e) {
+      distanceResult = { error: e.message };
+    } finally {
+      distanceLoading = false;
+    }
+  }
+
   $: chatContext = [
     `Screen: Appointment Details (Step 4) — Referral ${idx + 1}`,
     `Provider: ${providerName}`,
@@ -121,6 +139,11 @@
           <span style="font-size:14px; color:#374151">· {apptInfo.duration_minutes} minutes</span>
         {/if}
       </div>
+      <div style="font-size:12px; color:#6b7280; margin-top:4px">
+        {apptInfo.appointment_type === 'ESTABLISHED'
+          ? 'Established patient — has seen this provider/specialty before within 5 years'
+          : 'New patient — first visit with this provider/specialty'}
+      </div>
       {#if apptInfo.arrive_early_minutes}
         <div style="font-size:13px; color:#6b7280; margin-bottom:8px">
           Arrive {apptInfo.arrive_early_minutes} minutes early
@@ -134,37 +157,71 @@
     </div>
   {/if}
 
-  <!-- Location dropdown (C5) -->
+  <!-- Location selection (C6/C7) -->
   {#if apptInfo?.locations}
     <div class="card">
       <div class="form-row">
-        <label for="locationSelect">Location</label>
-        <select id="locationSelect" bind:value={selectedLocation}>
-          {#if apptInfo.locations.length > 1}
-            <option value="" disabled selected>Select a location...</option>
-          {/if}
-          {#each apptInfo.locations as loc}
-            <option value={loc.name}>{locationLabel(loc)}</option>
-          {/each}
-        </select>
-      </div>
-      {#if selectedLocation}
-        {@const loc = apptInfo.locations.find(l => l.name === selectedLocation)}
-        {#if loc?.address || loc?.phone}
-          <div style="margin-top:8px; font-size:13px; color:#6b7280">
-            {#if loc.address}<div>{loc.address}</div>{/if}
-            {#if loc.phone}<div>Phone: {loc.phone}</div>{/if}
+        <label>Location</label>
+        {#if apptInfo.locations.length === 1}
+          {@const loc = apptInfo.locations[0]}
+          <div style="padding:12px 14px; border:2px solid #16a34a; border-radius:8px; background:#f0fdf4">
+            <div style="font-size:11px; color:#15803d; font-weight:600; margin-bottom:4px; text-transform:uppercase">Only available location — auto-selected</div>
+            <div style="font-weight:600; font-size:14px">{loc.name} ✓</div>
+            <div style="font-size:13px; color:#6b7280; margin-top:4px">{Array.isArray(loc.days) ? loc.days.map(d=>d.slice(0,3)).join(', ') : loc.days} · {loc.hours}</div>
+            {#if loc.address}<div style="font-size:12px; color:#9ca3af; margin-top:2px">{loc.address}</div>{/if}
+            {#if loc.phone}<div style="font-size:12px; color:#9ca3af">{loc.phone}</div>{/if}
+          </div>
+        {:else}
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px">
+            {#each apptInfo.locations as loc}
+              {@const selected = selectedLocation === loc.name}
+              <div
+                on:click={() => selectedLocation = loc.name}
+                style="padding:12px 14px; border:2px solid {selected ? '#16a34a' : '#e5e7eb'}; border-radius:8px; cursor:pointer; background:{selected ? '#f0fdf4' : 'white'}; transition: all 0.15s"
+              >
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                  <div style="font-weight:600; font-size:14px; color:#111827">{loc.name} {selected ? '✓' : ''}</div>
+                  {#if selected}<span style="font-size:11px; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:9999px; font-weight:600">Selected</span>{/if}
+                </div>
+                <div style="font-size:13px; color:#6b7280; margin-top:4px">
+                  {Array.isArray(loc.days) ? loc.days.map(d => d.slice(0,3)).join(', ') : loc.days} · {loc.hours || ''}
+                </div>
+                {#if loc.address}<div style="font-size:12px; color:#9ca3af; margin-top:2px">{loc.address}</div>{/if}
+                {#if loc.phone}<div style="font-size:12px; color:#9ca3af">{loc.phone}</div>{/if}
+              </div>
+            {/each}
           </div>
         {/if}
-      {/if}
-      <div style="margin-top:10px">
-        <button
-          type="button"
-          style="background:none; border:none; color:#3b82f6; font-size:13px; cursor:pointer; padding:0; text-decoration:underline"
-          on:click={changeProvider}
-        >
-          ← Location not suitable? Change provider
+      </div>
+
+      <!-- Distance calculator (C10) -->
+      <div style="margin-top:12px">
+        <button type="button" style="background:none;border:none;color:#3b82f6;font-size:13px;cursor:pointer;padding:0" on:click={() => showDistance = !showDistance}>
+          {showDistance ? '▾' : '▸'} How far is this location for the patient?
         </button>
+        {#if showDistance}
+          <div style="margin-top:8px; padding:12px 14px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb">
+            <div style="display:flex; gap:8px; align-items:center">
+              <input bind:value={patientAddress} placeholder="Patient's address or zip code" style="flex:1; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px" on:keydown={(e) => e.key==='Enter' && fetchDistance()} />
+              <button class="btn btn-secondary" style="font-size:13px; padding:8px 14px" on:click={fetchDistance} disabled={distanceLoading || !patientAddress.trim()}>
+                {distanceLoading ? '...' : 'Get Distance'}
+              </button>
+            </div>
+            {#if distanceResult && !distanceResult.error}
+              <div style="margin-top:8px; font-size:14px; color:#374151; font-weight:600">
+                ~{distanceResult.miles} miles · ~{distanceResult.drive_minutes} min drive
+              </div>
+              <div style="font-size:11px; color:#9ca3af; margin-top:2px">{distanceResult.note}</div>
+            {:else if distanceResult?.error}
+              <div style="margin-top:8px; font-size:13px; color:#dc2626">{distanceResult.error}</div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Change Provider button (C9) -->
+      <div style="margin-top:12px">
+        <button class="btn btn-secondary" on:click={changeProvider}>← Choose a Different Provider</button>
       </div>
     </div>
   {:else if !apptLoading}
@@ -174,14 +231,8 @@
         <label>Location Name</label>
         <input bind:value={selectedLocation} placeholder="e.g. PPTH Orthopedics or Jefferson Hospital" />
       </div>
-      <div style="margin-top:10px">
-        <button
-          type="button"
-          style="background:none; border:none; color:#3b82f6; font-size:13px; cursor:pointer; padding:0; text-decoration:underline"
-          on:click={changeProvider}
-        >
-          ← Location not suitable? Change provider
-        </button>
+      <div style="margin-top:12px">
+        <button class="btn btn-secondary" on:click={changeProvider}>← Choose a Different Provider</button>
       </div>
     </div>
   {/if}
