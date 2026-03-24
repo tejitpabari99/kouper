@@ -87,6 +87,11 @@
           {#if booking.provider_phone}
             <div style="font-size:13px; color:#6b7280; margin-top:4px">📞 {booking.provider_phone}</div>
           {/if}
+          {#if booking.nurse_notes}
+            <div style="font-size:12px; color:#6b7280; margin-top:8px; padding-top:8px; border-top:1px solid #e5e7eb; font-style:italic">
+              📝 {booking.nurse_notes}
+            </div>
+          {/if}
         </div>
       {/each}
     </div>

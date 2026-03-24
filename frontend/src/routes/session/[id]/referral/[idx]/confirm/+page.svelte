@@ -17,6 +17,7 @@
   let error = '';
   let apptInfo = null;
   let scriptOpen = true;
+  let nurseNotes = '';
 
   onMount(async () => {
     try {
@@ -49,6 +50,7 @@
         provider_name: providerName,
         specialty: specialty,
         location_name: location,
+        nurse_notes: nurseNotes,
       });
       goto(`/session/${sid}`);
     } catch (e) {
@@ -129,6 +131,19 @@
         {#if prefs?.transportation_needs}Someone will also call you within 24 hours to arrange your transportation.{/if}"
       </div>
     {/if}
+  </div>
+
+  <div class="card">
+    <div style="font-size:15px; font-weight:600; margin-bottom:12px; color:#374151">Internal Notes</div>
+    <div class="form-row" style="margin-bottom:0">
+      <label style="font-size:13px; color:#6b7280">For care record only — not sent to patient</label>
+      <textarea
+        bind:value={nurseNotes}
+        rows="2"
+        placeholder="e.g., Patient concerned about copay, discussed self-pay options. Prefers morning calls."
+        style="padding:9px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; resize:vertical; width:100%; box-sizing:border-box; font-family:inherit"
+      ></textarea>
+    </div>
   </div>
 
   <div class="nav-row">
