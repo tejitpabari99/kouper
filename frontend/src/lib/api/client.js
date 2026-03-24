@@ -22,4 +22,7 @@ export const api = {
   savePreferences: (sessionId, prefs) => request('POST', `/session/${sessionId}/preferences`, prefs),
   confirmBooking: (sessionId, data) => request('POST', `/session/${sessionId}/confirm-booking`, data),
   getSummary: (sessionId) => request('GET', `/session/${sessionId}/summary`),
+  searchPatients: (q) => request('GET', `/patients?q=${encodeURIComponent(q)}`),
+  getProviders: (specialty, q) => request('GET', `/providers?specialty=${encodeURIComponent(specialty)}${q ? '&q=' + encodeURIComponent(q) : ''}`),
+  getAppointmentInfo: (sessionId, provider, specialty) => request('GET', `/session/${sessionId}/appointment-info?provider=${encodeURIComponent(provider)}&specialty=${encodeURIComponent(specialty)}`),
 };

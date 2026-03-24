@@ -3,13 +3,57 @@
   import { api } from '$lib/api/client.js';
   import { sessionId, patient } from '$lib/stores/session.js';
 
-  let patientIdInput = '1';
+  let searchInput = '';
+  let searchResults = [];
+  let showDropdown = false;
+  let selectedPatient = null;
   let loading = false;
-  let error = '';
   let loadedPatient = null;
   let createdSessionId = null;
+  let error = '';
+  let debounceTimer = null;
+
+  function onSearchInput() {
+    clearTimeout(debounceTimer);
+    selectedPatient = null;
+    showDropdown = false;
+
+    if (!searchInput.trim()) {
+      searchResults = [];
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      try {
+        const results = await api.searchPatients(searchInput.trim());
+        searchResults = results || [];
+        showDropdown = searchResults.length > 0;
+      } catch (e) {
+        searchResults = [];
+        showDropdown = false;
+      }
+    }, 300);
+  }
+
+  function pickPatient(p) {
+    selectedPatient = p;
+    searchInput = p.name;
+    showDropdown = false;
+    searchResults = [];
+  }
+
+  function clearSelection() {
+    selectedPatient = null;
+    searchInput = '';
+    searchResults = [];
+    showDropdown = false;
+    loadedPatient = null;
+    createdSessionId = null;
+    error = '';
+  }
 
   async function loadPatient() {
+    if (!selectedPatient) return;
     loading = true;
     error = '';
     loadedPatient = null;
@@ -17,7 +61,7 @@
       const session = await api.createSession();
       createdSessionId = session.session_id;
       sessionId.set(createdSessionId);
-      const p = await api.startSession(createdSessionId, patientIdInput);
+      const p = await api.startSession(createdSessionId, selectedPatient.id);
       loadedPatient = p;
       patient.set(p);
     } catch (e) {
@@ -30,6 +74,11 @@
   function proceed() {
     goto(`/session/${createdSessionId}`);
   }
+
+  function handleBlur() {
+    // Delay hiding dropdown so click events on results fire first
+    setTimeout(() => { showDropdown = false; }, 150);
+  }
 </script>
 
 <div class="screen">
@@ -39,14 +88,54 @@
   </div>
 
   <div class="card">
-    <div class="form-row">
-      <label for="patientId">Patient ID</label>
-      <div style="display:flex; gap:10px">
-        <input id="patientId" bind:value={patientIdInput} placeholder="Enter patient ID" style="flex:1" />
-        <button class="btn btn-primary" on:click={loadPatient} disabled={loading || !patientIdInput}>
-          {loading ? 'Loading...' : 'Load Patient'}
-        </button>
+    {#if selectedPatient && !loadedPatient}
+      <div style="margin-bottom:12px; padding:12px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; display:flex; align-items:center; gap:12px">
+        <span style="color:#16a34a; font-size:18px">&#10003;</span>
+        <div style="flex:1">
+          <div style="font-weight:600; font-size:15px">{selectedPatient.name}</div>
+          <div style="font-size:13px; color:#6b7280">DOB: {selectedPatient.dob} &nbsp;·&nbsp; {selectedPatient.phone}</div>
+        </div>
+        <button class="btn btn-secondary" style="font-size:12px; padding:4px 10px" on:click={clearSelection}>Change</button>
       </div>
+    {/if}
+
+    {#if !selectedPatient || loadedPatient}
+      <div class="form-row" style="position:relative">
+        <label for="patientSearch">Search by name, phone, email, or ID</label>
+        <input
+          id="patientSearch"
+          bind:value={searchInput}
+          on:input={onSearchInput}
+          on:blur={handleBlur}
+          on:focus={() => { if (searchResults.length > 0) showDropdown = true; }}
+          placeholder="e.g. John Smith, 555-1234, john@example.com"
+          autocomplete="off"
+        />
+
+        {#if showDropdown && searchResults.length > 0}
+          <div class="search-dropdown">
+            {#each searchResults as result}
+              <div
+                class="search-dropdown-item"
+                on:mousedown|preventDefault={() => pickPatient(result)}
+              >
+                <div style="font-weight:600; font-size:14px">{result.name}</div>
+                <div style="font-size:12px; color:#6b7280">DOB: {result.dob} &nbsp;·&nbsp; {result.phone}</div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <div style="margin-top:12px">
+      <button
+        class="btn btn-primary"
+        on:click={loadPatient}
+        disabled={loading || !selectedPatient || !!loadedPatient}
+      >
+        {loading ? 'Loading...' : 'Load Patient'}
+      </button>
     </div>
 
     {#if error}
@@ -77,3 +166,33 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .search-dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .search-dropdown-item:last-child {
+    border-bottom: none;
+  }
+
+  .search-dropdown-item:hover {
+    background: #eff6ff;
+  }
+</style>
