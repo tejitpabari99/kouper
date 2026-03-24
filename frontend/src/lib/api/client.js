@@ -30,4 +30,5 @@ export const api = {
   getDistance: (fromAddress, providerAddress) => request('GET', `/distance?from_address=${encodeURIComponent(fromAddress)}&provider_address=${encodeURIComponent(providerAddress)}`),
   sendSummary: (sessionId, method, contact) => request('POST', `/session/${sessionId}/send-summary`, { method, contact }),
   getColocatedSuggestions: (sessionId) => request('GET', `/session/${sessionId}/colocated-suggestions`),
+  getReminders: (sessionId) => request('GET', `/session/${sessionId}/reminders`),
 };

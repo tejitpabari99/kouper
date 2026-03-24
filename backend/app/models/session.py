@@ -33,6 +33,16 @@ class CompletedBooking(BaseModel):
     scheduled_date: Optional[str] = None
 
 
+class ReminderRecord(BaseModel):
+    booking_referral_index: int
+    touchpoint: Literal["booking_confirmation", "48hr_reminder", "day_of_reminder"]
+    channel: str            # mirrors PatientPreferences.contact_method
+    contact_value: str      # phone number or email — from preferences
+    status: Literal["queued", "sent", "failed"] = "queued"
+    scheduled_for: Optional[str] = None   # ISO date string or "pending_date"
+    message_template: str   # the fully rendered reminder text
+
+
 class BookingSession(BaseModel):
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: datetime = Field(default_factory=datetime.now)
@@ -46,3 +56,4 @@ class BookingSession(BaseModel):
     selected_location_name: Optional[str] = None
     patient_preferences: Optional[PatientPreferences] = None
     conversation_history: List[dict] = []
+    reminders: List[ReminderRecord] = []

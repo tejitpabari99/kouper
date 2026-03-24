@@ -14,6 +14,20 @@
   let sending = false;
   let sendResult = null;
   let sendError = '';
+  let reminders = [];
+  let remindersOpen = false;
+  let remindersLoaded = false;
+
+  async function loadReminders() {
+    if (remindersLoaded) return;
+    remindersLoaded = true;
+    try {
+      const res = await api.getReminders(sid);
+      reminders = res.reminders || [];
+    } catch (_) {
+      reminders = [];
+    }
+  }
 
   onMount(async () => {
     try {
@@ -111,6 +125,53 @@
         {/if}
       </div>
     {/if}
+
+    <div class="card">
+      <button
+        on:click={() => { remindersOpen = !remindersOpen; if (remindersOpen) loadReminders(); }}
+        style="background:none; border:none; padding:0; font-size:15px; font-weight:600; color:#374151; cursor:pointer; display:flex; align-items:center; gap:8px; width:100%"
+      >
+        <span>{remindersOpen ? '▾' : '▸'}</span>
+        Scheduled Reminder Touchpoints
+      </button>
+
+      {#if remindersOpen}
+        <div style="margin-top:12px">
+          {#if reminders.length === 0}
+            <div style="font-size:13px; color:#9ca3af">No reminders scheduled.</div>
+          {:else}
+            {#each summary?.bookings || [] as booking, i}
+              {@const bookingReminders = reminders.filter(r => r.booking_referral_index === booking.referral_index)}
+              {#if bookingReminders.length > 0}
+                <div style="margin-bottom:14px">
+                  <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px">
+                    Referral {booking.referral_index + 1} — {booking.specialty}
+                  </div>
+                  {#each bookingReminders as r}
+                    <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; padding:8px 10px; background:#f9fafb; border-radius:6px; border:1px solid #e5e7eb">
+                      <span style="color:{r.scheduled_for === 'pending_date' ? '#9ca3af' : '#16a34a'}; font-size:14px; flex-shrink:0; margin-top:1px">
+                        {r.scheduled_for === 'pending_date' ? '○' : '✓'}
+                      </span>
+                      <div style="flex:1; min-width:0">
+                        <div style="font-size:12px; font-weight:600; color:#374151; text-transform:capitalize">
+                          {r.touchpoint.replace(/_/g, ' ')}
+                        </div>
+                        <div style="font-size:12px; color:#6b7280; margin-top:2px">
+                          {r.channel} · {r.scheduled_for === 'pending_date' ? 'Pending appointment date' : 'Queued'}
+                        </div>
+                        <div style="font-size:12px; color:#9ca3af; margin-top:4px; font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+                          "{r.message_template}"
+                        </div>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            {/each}
+          {/if}
+        </div>
+      {/if}
+    </div>
 
     <div class="card">
       <div style="font-size:15px; font-weight:600; margin-bottom:16px; color:#374151">Send Summary to Patient</div>
