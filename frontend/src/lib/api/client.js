@@ -32,4 +32,6 @@ export const api = {
   getColocatedSuggestions: (sessionId) => request('GET', `/session/${sessionId}/colocated-suggestions`),
   getTransportResources: () => request('GET', '/transport-resources'),
   getReminders: (sessionId) => request('GET', `/session/${sessionId}/reminders`),
+  logOutcome: (data) => request('POST', '/outcomes', data),
+  getPatientOutcomes: (patientId) => request('GET', `/outcomes/patient/${patientId}`),
 };

@@ -1,8 +1,8 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, List
 
 from app.models.patient import PatientData
-from app.models.appointment import AppointmentTypeResult
+from app.models.appointment import AppointmentTypeResult, AppointmentOutcome
 from app.data.providers import PROVIDERS
 
 # Cutoff: appointments within 1825 days (5 years) count as ESTABLISHED
@@ -38,7 +38,11 @@ def _get_specialty_for_provider_name(provider_name: str) -> Optional[str]:
     return None
 
 
-def determine_appointment_type(patient: PatientData, specialty: str) -> AppointmentTypeResult:
+def determine_appointment_type(
+    patient: PatientData,
+    specialty: str,
+    additional_outcomes: Optional[List[AppointmentOutcome]] = None,
+) -> AppointmentTypeResult:
     """
     Determine whether a patient needs a NEW or ESTABLISHED appointment for a given specialty.
 
@@ -49,6 +53,20 @@ def determine_appointment_type(patient: PatientData, specialty: str) -> Appointm
     4. Otherwise → NEW.
     """
     most_recent_date: Optional[date] = None
+
+    # Check local outcome records (completed only)
+    if additional_outcomes:
+        for outcome in additional_outcomes:
+            if outcome.status != "completed":
+                continue
+            if outcome.specialty.lower() != specialty.lower():
+                continue
+            try:
+                appt_date = date.fromisoformat(outcome.appointment_date)
+            except ValueError:
+                continue
+            if most_recent_date is None or appt_date > most_recent_date:
+                most_recent_date = appt_date
 
     for appt in patient.appointments:
         if appt.status != "completed":

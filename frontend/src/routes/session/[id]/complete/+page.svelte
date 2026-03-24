@@ -18,6 +18,50 @@
   let remindersOpen = false;
   let remindersLoaded = false;
 
+  // A3: outcome logging per booking
+  let outcomeOpen = {};       // { referral_index: bool }
+  let outcomeForm = {};       // { referral_index: { date, status, notes } }
+  let outcomeSaving = {};     // { referral_index: bool }
+  let outcomeSaved = {};      // { referral_index: bool }
+  let outcomeError = {};      // { referral_index: string }
+
+  function toggleOutcome(idx) {
+    outcomeOpen = { ...outcomeOpen, [idx]: !outcomeOpen[idx] };
+    if (!outcomeForm[idx]) {
+      outcomeForm = { ...outcomeForm, [idx]: { date: '', status: 'completed', notes: '' } };
+    }
+  }
+
+  async function saveOutcome(booking) {
+    const idx = booking.referral_index;
+    const form = outcomeForm[idx];
+    if (!form?.date || !form?.status) {
+      outcomeError = { ...outcomeError, [idx]: 'Appointment date and status are required.' };
+      return;
+    }
+    outcomeSaving = { ...outcomeSaving, [idx]: true };
+    outcomeError = { ...outcomeError, [idx]: '' };
+    try {
+      await api.logOutcome({
+        patient_id: summary.patient.id,
+        session_id: sid,
+        referral_index: idx,
+        provider_name: booking.provider_name,
+        specialty: booking.specialty,
+        location: booking.location,
+        appointment_date: form.date,
+        status: form.status,
+        nurse_notes: form.notes || '',
+      });
+      outcomeSaved = { ...outcomeSaved, [idx]: true };
+      outcomeOpen = { ...outcomeOpen, [idx]: false };
+    } catch (e) {
+      outcomeError = { ...outcomeError, [idx]: e.message };
+    } finally {
+      outcomeSaving = { ...outcomeSaving, [idx]: false };
+    }
+  }
+
   async function loadReminders() {
     if (remindersLoaded) return;
     remindersLoaded = true;
@@ -106,6 +150,69 @@
               📝 {booking.nurse_notes}
             </div>
           {/if}
+
+          <!-- A3: outcome logging -->
+          <div style="margin-top:10px; padding-top:10px; border-top:1px solid #e5e7eb">
+            {#if outcomeSaved[booking.referral_index]}
+              <div style="font-size:12px; color:#16a34a; font-weight:600">✓ Outcome logged</div>
+            {:else}
+              <button
+                on:click={() => toggleOutcome(booking.referral_index)}
+                style="background:none; border:none; color:#6366f1; font-size:12px; cursor:pointer; padding:0; text-decoration:underline"
+              >
+                {outcomeOpen[booking.referral_index] ? '▾ Hide' : '▸ Update Outcome'}
+              </button>
+            {/if}
+
+            {#if outcomeOpen[booking.referral_index]}
+              {@const form = outcomeForm[booking.referral_index] || { date: '', status: 'completed', notes: '' }}
+              <div style="margin-top:8px; padding:10px; background:#f9fafb; border-radius:6px; border:1px solid #e5e7eb">
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px">
+                  <div>
+                    <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Appointment Date</label>
+                    <input
+                      type="date"
+                      value={form.date}
+                      on:input={(e) => outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...form, date: e.target.value } }}
+                      style="font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px"
+                    />
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Status</label>
+                    <select
+                      value={form.status}
+                      on:change={(e) => outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...form, status: e.target.value } }}
+                      style="font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px"
+                    >
+                      <option value="completed">Completed</option>
+                      <option value="no-show">No-Show</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="margin-bottom:8px">
+                  <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Notes (optional)</label>
+                  <textarea
+                    value={form.notes}
+                    on:input={(e) => outcomeForm = { ...outcomeForm, [booking.referral_index]: { ...form, notes: e.target.value } }}
+                    rows="2"
+                    style="width:100%; font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px; resize:vertical; box-sizing:border-box"
+                  ></textarea>
+                </div>
+                {#if outcomeError[booking.referral_index]}
+                  <div style="font-size:12px; color:#dc2626; margin-bottom:6px">{outcomeError[booking.referral_index]}</div>
+                {/if}
+                <button
+                  class="btn btn-primary"
+                  style="font-size:12px; padding:4px 14px"
+                  on:click={() => saveOutcome(booking)}
+                  disabled={outcomeSaving[booking.referral_index]}
+                >
+                  {outcomeSaving[booking.referral_index] ? 'Saving...' : 'Save Outcome'}
+                </button>
+              </div>
+            {/if}
+          </div>
         </div>
       {/each}
     </div>
