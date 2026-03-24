@@ -46,6 +46,15 @@
     }
   });
 
+  function slotsByDay(group) {
+    return Object.entries(group.slots.reduce((acc, s) => {
+      const key = s.date + '|' + s.day_name;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(s);
+      return acc;
+    }, {}));
+  }
+
   function selectSlot(slot) {
     selectedSlot = slot;
     sessionStorage.setItem(`slot_${sid}_${idx}`, JSON.stringify(slot));
@@ -121,14 +130,7 @@
 
         {#if openWeeks[wi]}
           <div style="margin-top:10px">
-            <!-- Group by day -->
-            {@const byDay = group.slots.reduce((acc, s) => {
-              const key = s.date + '|' + s.day_name;
-              if (!acc[key]) acc[key] = [];
-              acc[key].push(s);
-              return acc;
-            }, {})}
-            {#each Object.entries(byDay) as [dayKey, daySlots]}
+            {#each slotsByDay(group) as [dayKey, daySlots]}
               <div style="margin-bottom:10px">
                 <div style="font-size:12px; font-weight:600; color:#6b7280; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em">
                   {daySlots[0].day_name} · {new Date(daySlots[0].date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}

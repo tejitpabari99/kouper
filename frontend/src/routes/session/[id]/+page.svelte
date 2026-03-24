@@ -31,7 +31,11 @@
   });
 
   function bookReferral(idx) {
-    goto(`/session/${sid}/referral/${idx}/provider`);
+    if (!state?.insurance) {
+      goto(`/session/${sid}/insurance?next=${idx}`);
+    } else {
+      goto(`/session/${sid}/referral/${idx}/provider`);
+    }
   }
 
   function finishSession() {
@@ -76,6 +80,18 @@
         <div style="color:#6b7280; font-size:14px; margin-top:2px">{state.patient.name}</div>
         <div style="font-size:13px; color:#6b7280; margin-top:2px">
           {bookedIndexes.size} of {referrals.length} referral{referrals.length !== 1 ? 's' : ''} booked
+          {#if state.insurance}
+            &nbsp;·&nbsp;
+            <span style="color:{state.insurance === 'Self-Pay' ? '#7c3aed' : '#374151'}">
+              {state.insurance}
+            </span>
+            <button
+              style="background:none; border:none; color:#9ca3af; font-size:11px; cursor:pointer; text-decoration:underline; padding:0; margin-left:4px"
+              on:click={() => goto(`/session/${sid}/insurance?next=0`)}
+            >edit</button>
+          {:else}
+            &nbsp;·&nbsp; <span style="color:#dc2626; font-size:12px; font-weight:600">Insurance not set</span>
+          {/if}
         </div>
       {/if}
     </div>

@@ -224,11 +224,14 @@
                   {:else if isSelected}
                     <span class="badge-selected">✓ Selected</span>
                   {/if}
-                  {@const badge = insuranceBadge(p)}
-                  {#if badge === 'covered'}
+                  {#if patientInsurance && patientInsurance.toLowerCase() === 'self-pay'}
+                    {#if p.self_pay_rate}
+                      <span style="font-size:11px; background:#f5f3ff; color:#6d28d9; padding:2px 8px; border-radius:9999px; font-weight:600">${p.self_pay_rate}/visit</span>
+                    {/if}
+                  {:else if insuranceBadge(p) === 'covered'}
                     <span style="font-size:11px; background:#dcfce7; color:#16a34a; padding:2px 8px; border-radius:9999px; font-weight:600">✓ Covered</span>
-                  {:else if badge === 'not-covered'}
-                    <span style="font-size:11px; background:#fee2e2; color:#dc2626; padding:2px 8px; border-radius:9999px; font-weight:600">✗ Out of Network</span>
+                  {:else if insuranceBadge(p) === 'not-covered'}
+                    <span style="font-size:11px; background:#fee2e2; color:#dc2626; padding:2px 8px; border-radius:9999px; font-weight:600">✗ Out of Network{p.self_pay_rate ? ' · $' + p.self_pay_rate + '/visit' : ''}</span>
                   {/if}
                   {#if !p.accepting_new_patients}
                     <span style="font-size:11px; background:#fff7ed; color:#c2410c; padding:2px 8px; border-radius:9999px; font-weight:600">{p.waitlist_available ? 'Waitlist Only' : 'Not Accepting'}</span>

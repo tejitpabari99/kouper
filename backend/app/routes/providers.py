@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Query
 from typing import Optional
 from ..data.providers import PROVIDERS
+from ..data.insurance import SELF_PAY_RATES
 from ..logic.availability import check_availability
 
 router = APIRouter(prefix="/providers", tags=["providers"])
@@ -46,6 +47,7 @@ def list_providers(
             "accepted_insurances": provider.accepted_insurances,
             "accepting_new_patients": provider.accepting_new_patients,
             "waitlist_available": provider.waitlist_available,
+            "self_pay_rate": SELF_PAY_RATES.get(provider.specialty),
         })
 
     return results

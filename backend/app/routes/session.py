@@ -52,6 +52,17 @@ def get_colocated_suggestions(session_id: str):
 
     return find_colocated_providers(provider_names)
 
+@router.post("/{session_id}/insurance")
+def set_insurance(session_id: str, body: dict):
+    """Save the patient's insurance to the session (nurse-entered, overrides EHR)."""
+    session = store.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    session.insurance = body.get("insurance", "").strip() or None
+    store.update(session)
+    return {"insurance": session.insurance}
+
+
 @router.get("/{session_id}/reminders")
 def get_reminders(session_id: str):
     """Return all scheduled reminder records for this session."""

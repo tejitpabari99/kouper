@@ -15,10 +15,8 @@ def insurance_check(session_id: str, provider: str, specialty: str):
     session = store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if not session.patient:
-        raise HTTPException(status_code=400, detail="No patient loaded")
-
-    patient_insurance = session.patient.get("insurance", "") or ""
+    # Nurse-entered insurance takes precedence over EHR data
+    patient_insurance = session.insurance or (session.patient.get("insurance", "") if session.patient else "") or ""
 
     if not patient_insurance or patient_insurance.lower() == "self-pay":
         return {

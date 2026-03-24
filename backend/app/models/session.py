@@ -57,3 +57,4 @@ class BookingSession(BaseModel):
     patient_preferences: Optional[PatientPreferences] = None
     conversation_history: List[dict] = []
     reminders: List[ReminderRecord] = []
+    insurance: Optional[str] = None  # nurse-entered insurance, overrides patient EHR data
