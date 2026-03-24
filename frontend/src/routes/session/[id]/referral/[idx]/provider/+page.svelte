@@ -70,15 +70,28 @@
     navError = '';
   }
 
+  const ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   function providerDays(p) {
     if (!p.locations?.length) return '';
-    const days = p.locations.flatMap(l => l.days || []);
-    return [...new Set(days)].join(', ');
+    // Per-location schedule
+    return p.locations.map(l => {
+      const days = (l.days || []).slice().sort((a,b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+      const abbr = days.map(d => d.slice(0,3)).join(', ');
+      return `${l.name}: ${abbr} ${l.hours || ''}`.trim();
+    }).join(' | ');
   }
 
   function providerLocationNames(p) {
     if (!p.locations?.length) return '';
     return p.locations.map(l => l.name).join(', ');
+  }
+
+  function providerSummary(p) {
+    if (!p.locations?.length) return '';
+    return p.locations.map(l => {
+      const city = l.address ? l.address.split(',').slice(1,2).join('').trim() : '';
+      return city ? `${l.name} (${city})` : l.name;
+    }).join(' · ');
   }
 
   async function continueToDetails() {
@@ -143,7 +156,6 @@
       </label>
       <input
         bind:value={filterText}
-        on:keydown={handleKeydown}
         placeholder="Type to filter by name..."
         autocomplete="off"
         style="width:100%; padding:9px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; box-sizing:border-box"
@@ -154,6 +166,11 @@
       <div style="color:#6b7280; font-size:14px">Loading {specialty} providers...</div>
     {:else if filteredProviders.length > 0}
       <div>
+        {#if !providersLoading && providers.length > 0}
+          <div style="font-size:12px; color:#6b7280; margin-bottom:6px">
+            {filterText ? `${filteredProviders.length} of ${providers.length}` : providers.length} {specialty} provider{providers.length !== 1 ? 's' : ''} available
+          </div>
+        {/if}
         <div style="font-size:13px; font-weight:600; color:#6b7280; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em">
           {filterText ? 'Matching' : 'Available'} {specialty} Providers
         </div>
@@ -174,19 +191,20 @@
                     {p.name}
                     {#if isSelected}<span style="color:#16a34a; margin-left:4px">✓</span>{/if}
                   </div>
-                  {#if providerLocationNames(p)}
-                    <div class="provider-specialty" style="margin-top:2px">{providerLocationNames(p)}</div>
+                  {#if providerSummary(p)}
+                    <div class="provider-specialty" style="margin-top:2px">{providerSummary(p)}</div>
                   {/if}
                   {#if providerDays(p)}
                     <div style="font-size:12px; color:#6b7280; margin-top:2px">Available: {providerDays(p)}</div>
                   {/if}
                 </div>
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0">
-                  {#if isReferred}
-                    <span class="badge-referred">Referred</span>
-                  {/if}
-                  {#if isSelected}
-                    <span class="badge-selected">Selected</span>
+                  {#if isReferred && isSelected}
+                    <span class="badge-selected">✓ Selected (Referred)</span>
+                  {:else if isReferred}
+                    <span class="badge-referred">Referred by chart</span>
+                  {:else if isSelected}
+                    <span class="badge-selected">✓ Selected</span>
                   {/if}
                 </div>
               </div>
