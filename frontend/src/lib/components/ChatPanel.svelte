@@ -1,5 +1,8 @@
 <script>
   import { api } from '$lib/api/client.js';
+  import { marked } from 'marked';
+
+  marked.setOptions({ breaks: true });
 
   export let sessionId;
 
@@ -57,10 +60,15 @@
         {/if}
         {#each messages as msg}
           <div style="display:flex; {msg.role === 'user' ? 'justify-content:flex-end' : 'justify-content:flex-start'}">
-            <div style="max-width:85%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5;
-              {msg.role === 'user' ? 'background:#2563eb; color:white' : 'background:#f3f4f6; color:#111827'}">
-              {msg.text}
-            </div>
+            {#if msg.role === 'assistant'}
+              <div class="msg-assistant" style="max-width:85%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#f3f4f6; color:#111827">
+                {@html marked(msg.text)}
+              </div>
+            {:else}
+              <div style="max-width:85%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#2563eb; color:white">
+                {msg.text}
+              </div>
+            {/if}
           </div>
         {/each}
         {#if sending}
@@ -99,3 +107,15 @@
     </button>
   {/if}
 </div>
+
+<style>
+  .msg-assistant :global(p) { margin: 0 0 8px 0; }
+  .msg-assistant :global(p:last-child) { margin-bottom: 0; }
+  .msg-assistant :global(table) { border-collapse: collapse; width: 100%; font-size: 12px; margin: 8px 0; }
+  .msg-assistant :global(th), .msg-assistant :global(td) { border: 1px solid #d1d5db; padding: 4px 8px; text-align: left; }
+  .msg-assistant :global(th) { background: #f3f4f6; font-weight: 600; }
+  .msg-assistant :global(strong) { font-weight: 700; }
+  .msg-assistant :global(ul), .msg-assistant :global(ol) { margin: 4px 0; padding-left: 16px; }
+  .msg-assistant :global(li) { margin: 2px 0; }
+  .msg-assistant :global(blockquote) { margin: 4px 0; padding-left: 10px; border-left: 3px solid #d1d5db; color: #6b7280; font-style: italic; }
+</style>
