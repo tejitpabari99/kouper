@@ -1,3 +1,20 @@
+<!--
+  New Patient — manual patient registration screen.
+
+  Used when a patient isn't found in the EHR search on the dashboard (e.g.
+  walk-ins, transfers). Creates a local patient record then immediately starts
+  a session, so the nurse lands on the Referrals Overview just as they would
+  via the normal lookup flow.
+
+  Key design points:
+    - At least one referral specialty is required before submit
+    - Insurance is optional here; it can also be set mid-flow on the
+      insurance interstitial page
+    - The referral list is a dynamic array — nurses can add/remove slots
+    - canSubmit is reactive so the submit button enables without an event handler
+    - On success, session + patient are created atomically then the nurse is
+      sent to /session/<id>
+-->
 <script>
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client.js';
@@ -24,6 +41,7 @@
     referrals = referrals.filter((_, idx) => idx !== i);
   }
 
+  // Derived: filter out unselected slots before validation and submission
   $: validReferrals = referrals.filter(r => r.trim());
   $: canSubmit = name.trim() && dob && validReferrals.length > 0;
 
@@ -101,7 +119,7 @@
     </div>
   </div>
 
-  <!-- Insurance -->
+  <!-- Insurance — toggle chip picker, selection state drives canSubmit indirectly -->
   <div class="card">
     <div style="font-size:15px; font-weight:600; color:#374151; margin-bottom:12px">Insurance</div>
     <div style="display:flex; flex-wrap:wrap; gap:8px">
@@ -117,7 +135,7 @@
     {/if}
   </div>
 
-  <!-- Referrals -->
+  <!-- Referrals — dynamic list; at least one required -->
   <div class="card">
     <div style="font-size:15px; font-weight:600; color:#374151; margin-bottom:4px">Referrals <span style="color:#dc2626">*</span></div>
     <div style="font-size:13px; color:#9ca3af; margin-bottom:14px">At least one specialty required</div>

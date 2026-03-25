@@ -1,3 +1,22 @@
+<!--
+  Provider Selection — Step 3 of the referral booking flow.
+
+  The nurse selects which provider will handle this referral. The list is
+  fetched from the backend filtered by the referral's specialty. If the
+  referring physician named a specific provider in the patient's chart, that
+  provider is pre-selected and badged as "Referred by chart".
+
+  Key behaviours:
+    - Insurance badges (Covered / Out of Network / self-pay rate) are computed
+      client-side by comparing patient insurance against each provider's
+      accepted_insurances array
+    - The `findMatchingProvider` fuzzy match normalises punctuation/spacing so
+      "Dr. Smith" matches "Smith, John MD" in the provider list
+    - On "Continue", appointment info is pre-fetched and cached in sessionStorage
+      so Step 4 (details) loads instantly — avoids a loading spinner mid-flow
+    - navError catches 404s specifically to give a cleaner message when a
+      provider exists in the referral but not in the provider directory
+-->
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -27,6 +46,7 @@
       return;
     }
 
+    // Insurance can be stored at the session level (overrides patient record)
     patientInsurance = state?.insurance || state?.patient?.insurance || '';
 
     const ref = state?.patient?.referred_providers?.[idx];
@@ -53,6 +73,8 @@
     api.logNurseEvent(sid, 'step_visited', { step: 'provider_selection', referral_index: idx });
   });
 
+  // Fuzzy name match: normalises punctuation and tests word-level inclusion
+  // in both directions so short tokens don't false-positive on long names
   function findMatchingProvider(raw, list) {
     const normalize = s => s.toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
     const rawWords = normalize(raw).split(' ').filter(w => w.length > 2);
@@ -66,6 +88,7 @@
   $: specialty = referral?.specialty || '';
   $: namedProvider = referral?.provider || null;
 
+  // Client-side filter — instant, no API call needed
   $: filteredProviders = filterText.trim()
     ? providers.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()))
     : providers;
@@ -77,6 +100,8 @@
   }
 
   const ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+  // Format per-location schedules for the provider card subtitle
   function providerDays(p) {
     if (!p.locations?.length) return '';
     // Per-location schedule
@@ -100,6 +125,7 @@
     }).join(' · ');
   }
 
+  // Returns 'covered', 'not-covered', or null (when self-pay or unknown)
   function insuranceBadge(p) {
     if (!patientInsurance || patientInsurance.toLowerCase() === 'self-pay') return null;
     const accepted = (p.accepted_insurances || []).some(ins =>
@@ -109,6 +135,7 @@
     return accepted ? 'covered' : 'not-covered';
   }
 
+  // Pre-fetch appointment info and cache it so Step 4 loads without a spinner
   async function continueToDetails() {
     if (!selectedProvider || navigating) return;
     navigating = true;

@@ -1,3 +1,23 @@
+<!--
+  Appointment Details — Step 4 of the referral booking flow.
+
+  Shows structured appointment info for the selected provider: appointment
+  type (NEW vs. ESTABLISHED), duration, arrival time, available locations,
+  and insurance status. The nurse selects a location here before proceeding
+  to the schedule step.
+
+  Key behaviours:
+    - Appointment info is read from sessionStorage first (pre-cached by
+      Step 3's continueToDetails()), avoiding a redundant API call mid-flow
+    - Insurance check runs in parallel after appointment info loads; the
+      result drives a coloured insurance status card
+    - If only one location exists it is auto-selected; multiple locations
+      show a clickable card grid
+    - Distance calculator is an optional collapsible widget — useful when
+      the patient has accessibility concerns but not needed for every booking
+    - Provider/specialty are passed via query params so the component is
+      stateless and bookmarkable
+-->
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -20,6 +40,7 @@
   let insuranceInfo = null;
   let insuranceLoading = false;
 
+  // Provider/specialty come from query params so this page is deep-linkable
   $: providerName = $page.url.searchParams.get('provider') || '';
   $: specialtyParam = $page.url.searchParams.get('specialty') || '';
 
@@ -62,6 +83,7 @@
     await loadInsuranceInfo();
   });
 
+  // If only one location exists, spare the nurse a click
   function autoSelectLocation() {
     if (apptInfo?.locations?.length === 1) {
       selectedLocation = apptInfo.locations[0].name;
@@ -175,6 +197,7 @@
     </div>
   {/if}
 
+  <!-- Insurance status card: colour-coded by acceptance / prior auth status -->
   {#if insuranceInfo}
     <div class="card" style="border-left:4px solid {insuranceInfo.accepted === false ? '#ef4444' : insuranceInfo.prior_auth_required ? '#f59e0b' : '#16a34a'}">
       <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:8px">Insurance Status</div>
@@ -220,6 +243,7 @@
         <label>Location</label>
         {#if apptInfo.locations.length === 1}
           {@const loc = apptInfo.locations[0]}
+          <!-- Single location: auto-selected, shown as confirmed -->
           <div style="padding:12px 14px; border:2px solid #16a34a; border-radius:8px; background:#f0fdf4">
             <div style="font-size:11px; color:#15803d; font-weight:600; margin-bottom:4px; text-transform:uppercase">Only available location — auto-selected</div>
             <div style="font-weight:600; font-size:14px">{loc.name} ✓</div>
@@ -228,6 +252,7 @@
             {#if loc.phone}<div style="font-size:12px; color:#9ca3af">{loc.phone}</div>{/if}
           </div>
         {:else}
+          <!-- Multiple locations: clickable selection cards -->
           <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px">
             {#each apptInfo.locations as loc}
               {@const selected = selectedLocation === loc.name}
@@ -250,7 +275,7 @@
         {/if}
       </div>
 
-      <!-- Distance calculator (C10) -->
+      <!-- Distance calculator (C10): collapsible, only loads on demand -->
       <div style="margin-top:12px">
         <button type="button" style="background:none;border:none;color:#3b82f6;font-size:13px;cursor:pointer;padding:0" on:click={() => showDistance = !showDistance}>
           {showDistance ? '▾' : '▸'} How far is this location for the patient?

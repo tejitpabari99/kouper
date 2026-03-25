@@ -1,8 +1,26 @@
+<!--
+  Session-scoped layout — wraps every route under /session/[id]/.
+
+  Responsibilities:
+    - Renders the active child page via <slot />
+    - Appends a "Delete this session" control at the bottom of every session page
+
+  The delete flow uses a two-step confirmation to prevent accidental deletion:
+    1. Low-visibility text link shown by default
+    2. Inline confirmation card with Cancel / Confirm buttons
+
+  After deletion the user is sent back to the dashboard (/). The API call
+  failure is silently swallowed — the goal is always to navigate home.
+
+  Note: `sid` is derived reactively from `$page.params.id` so it updates
+  correctly if SvelteKit ever reuses this layout across different session IDs.
+-->
 <script>
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client.js';
 
+  // Reactive: re-derives from the URL param if the layout is reused
   $: sid = $page.params.id;
 
   let showConfirm = false;
@@ -34,6 +52,7 @@
       </div>
     </div>
   {:else}
+    <!-- Intentionally low-contrast to avoid accidental clicks -->
     <button
       style="background:none; border:none; color:#d1d5db; font-size:12px; cursor:pointer; text-decoration:underline"
       on:click={() => showConfirm = true}

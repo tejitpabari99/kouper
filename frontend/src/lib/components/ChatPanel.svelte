@@ -1,3 +1,29 @@
+<!--
+  ChatPanel — floating LLM assistant widget.
+
+  Rendered as a fixed pill button (bottom-right corner) that expands into a
+  chat drawer. It is included on every step of the referral flow and receives
+  a `context` string that describes the current screen state so the LLM can
+  give contextually relevant answers.
+
+  Props:
+    sessionId  — backend session UUID, used to namespace the chat history in
+                 the `chatMessages` store and to route API calls
+    context    — plain-text summary of what's on screen right now (provider
+                 name, specialty, selected slot, etc.), injected into each
+                 message so the LLM has situational awareness without the
+                 nurse having to repeat themselves
+
+  Key design decisions:
+    - Chat history is kept in the shared `chatMessages` store (not local state)
+      so navigating away and back preserves the conversation.
+    - Two independent timeout timers: a 5-second "slow warning" and a 15-second
+      hard client-side abort that inserts an error message so the UI never hangs.
+    - Error messages carry an incidentId for correlation, and inline reporting
+      lets the nurse submit a feedback ticket without leaving the flow.
+    - Markdown rendering via `marked` so the LLM can return formatted tables
+      and lists (common for provider comparisons).
+-->
 <script>
   import { api } from '$lib/api/client.js';
   import { marked } from 'marked';
@@ -8,12 +34,15 @@
   export let sessionId;
   export let context = '';
 
+  // Derive this session's message array reactively from the shared store
   $: messages = $chatMessages[sessionId] || [];
   let input = '';
   let sending = false;
   let slowWarning = false;
   let open = false;
 
+  // Write a new message into the store for this session without replacing
+  // other sessions' histories
   function addMessage(msg) {
     chatMessages.update(all => ({
       ...all,
@@ -21,10 +50,12 @@
     }));
   }
 
+  // Generates a short unique ID for correlating error reports
   function makeIncidentId() {
     return 'INC-' + Date.now().toString(36).toUpperCase();
   }
 
+  // Per-incident feedback state: tracks whether a report has been sent
   let feedbackState = {}; // { incidentId: 'idle' | 'sending' | 'sent' }
   let feedbackComment = {};
 
@@ -36,11 +67,12 @@
         error_code: errorCode || null,
         error_message: errorMessage,
         session_id: sessionId,
-        page_context: context.slice(0, 300),
+        page_context: context.slice(0, 300), // trim to avoid oversized payloads
         user_comment: feedbackComment[incidentId] || '',
       });
       feedbackState = { ...feedbackState, [incidentId]: 'sent' };
     } catch (_) {
+      // Even if the report fails, mark it sent so the UI doesn't loop
       feedbackState = { ...feedbackState, [incidentId]: 'sent' };
     }
   }
@@ -53,9 +85,12 @@
     sending = true;
     slowWarning = false;
 
+    // After 5s with no response, show a "still working" notice
     let slowTimer = setTimeout(() => {
       if (sending) slowWarning = true;
     }, 5000);
+
+    // After 15s, give up and surface a reportable error message in the chat
     let timeoutTimer = setTimeout(() => {
       if (sending) {
         sending = false;
@@ -74,6 +109,8 @@
     }, 15000);
 
     try {
+      // Race the API call against a 30s promise so the fetch itself also has
+      // a hard ceiling (the 15s timer above will usually fire first)
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out after 30s')), 30000));
       const res = await Promise.race([api.sendMessage(sessionId, msg, context), timeout]);
       clearTimeout(slowTimer);
@@ -95,6 +132,7 @@
       });
     } finally {
       sending = false;
+      // Scroll to bottom after the DOM updates with the new message
       setTimeout(() => {
         const el = document.getElementById('chat-messages');
         if (el) el.scrollTop = el.scrollHeight;
@@ -102,6 +140,7 @@
     }
   }
 
+  // Allows suggested prompts to be clicked and submitted in one action
   async function submitPrompt(text) {
     input = text;
     await sendMessage();
@@ -130,6 +169,7 @@
       <!-- Messages -->
       <div id="chat-messages" style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px">
         {#if messages.length === 0}
+          <!-- Suggested prompts shown only on an empty thread -->
           <div style="padding:8px 4px">
             <div style="color:#9ca3af; font-size:12px; margin-bottom:10px; text-align:center">Suggested questions:</div>
             {#each [
@@ -148,6 +188,7 @@
           <div style="display:flex; {msg.role === 'user' ? 'justify-content:flex-end' : 'justify-content:flex-start'}">
             {#if msg.role === 'assistant'}
               {#if msg.error}
+                <!-- Error bubble: shows incident ID and inline report form -->
                 <div style="max-width:92%; padding:10px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#fef2f2; border:1px solid #fca5a5; color:#991b1b">
                   <div style="font-weight:600; margin-bottom:4px">⚠ System Error</div>
                   <div style="margin-bottom:6px">{msg.text}</div>
@@ -175,6 +216,7 @@
                   {/if}
                 </div>
               {:else}
+                <!-- Normal assistant message: rendered as Markdown -->
                 <div class="msg-assistant" style="max-width:85%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#f3f4f6; color:#111827">
                   {@html marked(msg.text)}
                 </div>
@@ -224,6 +266,7 @@
 </div>
 
 <style>
+  /* Reset margins inside Markdown-rendered assistant messages */
   .msg-assistant :global(p) { margin: 0 0 8px 0; }
   .msg-assistant :global(p:last-child) { margin-bottom: 0; }
   .msg-assistant :global(table) { border-collapse: collapse; width: 100%; font-size: 12px; margin: 8px 0; }

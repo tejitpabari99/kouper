@@ -1,3 +1,21 @@
+<!--
+  Insurance Interstitial — Step 2.5, inserted before provider selection when
+  the session doesn't yet have an insurance plan on record.
+
+  The referral index being booked is passed via the `?next=<idx>` query param
+  so the nurse is redirected back to the correct provider selection step after
+  saving insurance.
+
+  Key behaviours:
+    - On mount, pre-fills from session state (session-level insurance overrides
+      the patient's EHR insurance) with fuzzy matching against the known plan
+      list to handle slight name variations
+    - "Other" option shows a free-text input for plans not in the known list
+    - Self-Pay selection triggers a rate reference card so the nurse can
+      inform the patient of estimated costs before proceeding
+    - Saved value is stored at the session level (not just the patient record)
+      so it can differ from the EHR-sourced patient insurance for this visit
+-->
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -5,6 +23,7 @@
   import { api } from '$lib/api/client.js';
 
   const sid = $page.params.id;
+  // `next` is the referral index to proceed to after saving insurance
   $: next = parseInt($page.url.searchParams.get('next') || '0');
 
   const KNOWN_PLANS = [
@@ -23,13 +42,14 @@
   onMount(async () => {
     try {
       const state = await api.getState(sid);
-      // Pre-fill if already set
+      // Pre-fill if already set — session-level insurance takes precedence
       if (state.insurance) {
         const match = KNOWN_PLANS.find(p => p.toLowerCase() === state.insurance.toLowerCase());
         if (match) selected = match;
         else if (state.insurance.toLowerCase() === 'self-pay') selected = 'Self-Pay';
         else { selected = 'other'; customInput = state.insurance; }
       } else if (state.patient?.insurance) {
+        // Fall back to patient's EHR insurance, fuzzy-matched to known plans
         const ehr = state.patient.insurance;
         const match = KNOWN_PLANS.find(p => ehr.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(ehr.toLowerCase()));
         if (match) selected = match;
@@ -46,6 +66,7 @@
     error = '';
     try {
       await api.setInsurance(sid, value);
+      // Return to the provider selection step for the referral that triggered this screen
       goto(`/session/${sid}/referral/${next}/provider`);
     } catch (e) {
       error = e.message;
@@ -79,6 +100,7 @@
         </button>
       {/each}
 
+      <!-- Self-Pay rendered in purple to visually distinguish it from insured plans -->
       <button
         on:click={() => selected = 'Self-Pay'}
         style="text-align:left; padding:12px 16px; border-radius:8px; border:2px solid {selected === 'Self-Pay' ? '#7c3aed' : '#e5e7eb'}; background:{selected === 'Self-Pay' ? '#f5f3ff' : 'white'}; font-size:14px; font-weight:{selected === 'Self-Pay' ? '600' : '400'}; color:{selected === 'Self-Pay' ? '#6d28d9' : '#374151'}; cursor:pointer; display:flex; align-items:center; gap:10px"
@@ -108,6 +130,7 @@
     {/if}
   </div>
 
+  <!-- Self-pay rate reference card: shown so nurse can inform patient before proceeding -->
   {#if selected === 'Self-Pay'}
     <div class="card" style="border-left:4px solid #7c3aed">
       <div style="font-size:13px; color:#6d28d9; font-weight:600; margin-bottom:6px">Self-Pay Rates</div>

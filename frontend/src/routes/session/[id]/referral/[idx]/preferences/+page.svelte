@@ -1,3 +1,19 @@
+<!--
+  Patient Preferences — Step 6 (formerly Step 5) of the referral booking flow.
+
+  Captures how the patient wants to be contacted for follow-up and any logistics
+  that affect care coordination: language, contact window, transportation needs.
+
+  Key behaviours:
+    - Transportation resources are fetched lazily on demand (only when the
+      nurse toggles "Needs Ride Assistance") to avoid loading on every visit
+    - The reactive statement `$: if (transportationNeeds) loadTransportResources()`
+      triggers the fetch without an explicit event handler
+    - Preferences are saved to the backend before navigation so they're
+      available on the confirmation page without re-fetching
+    - The scheduled datetime from the previous step is threaded through query
+      params so it reaches the confirm page intact
+-->
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -40,6 +56,8 @@
     api.logNurseEvent(sid, 'step_visited', { step: 'patient_preferences', referral_index: idx });
   });
 
+  // Lazy-load transport resources — only fetch when the nurse indicates the
+  // patient needs a ride; guard prevents duplicate fetches on re-renders
   async function loadTransportResources() {
     if (transportResources.length > 0) return;
     transportResourcesLoading = true;
@@ -52,6 +70,7 @@
     }
   }
 
+  // Reactive trigger: fires loadTransportResources when toggle flips to true
   $: if (transportationNeeds) loadTransportResources();
 
   async function proceed() {
@@ -66,6 +85,7 @@
         transportation_needs: transportationNeeds,
         notes,
       });
+      // Thread scheduled_datetime forward only if it was set in the previous step
       const confirmParams = new URLSearchParams({ provider: providerName, location, specialty });
       if (scheduledDatetime) confirmParams.set('scheduled_datetime', scheduledDatetime);
       goto(`/session/${sid}/referral/${idx}/confirm?${confirmParams}`);
@@ -175,6 +195,7 @@
     </div>
 
     {#if transportationNeeds}
+      <!-- Expanded transport panel: scripted language + community resources -->
       <div style="margin-top:12px; padding:12px 14px; background:#fefce8; border:1px solid #fde047; border-radius:8px">
         <div style="font-size:13px; color:#713f12; margin-bottom:8px">
           ✓ Transportation need will be recorded in the session summary for care coordinator follow-up.

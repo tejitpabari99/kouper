@@ -1,3 +1,23 @@
+<!--
+  Referrals Overview — Step 2 of the booking flow.
+
+  This is the central hub of a session. After the patient is loaded (Step 1),
+  the nurse lands here to see all outstanding referrals and their booking status.
+
+  Key behaviours:
+    - Loads full session state on mount (patient info, existing bookings)
+    - Checks for colocated provider suggestions (appointments that could be
+      combined into one trip) and shows a dismissable banner
+    - Warns if the patient has a prior no-show on record
+    - "Book This" button for unbooked referrals gates on insurance being set:
+        if not yet set → redirect to /insurance?next=<idx>
+        if set         → go directly to /referral/<idx>/provider
+    - "Complete Session" is disabled until every referral has a booking
+    - Booking status and referral count are derived reactively from state
+
+  The `chatContext` string is assembled from live state and passed to
+  ChatPanel so the LLM knows which referrals are booked vs. pending.
+-->
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -20,7 +40,8 @@
 
     api.logNurseEvent(sid, 'step_visited', { step: 'referrals_overview' });
 
-    // Check dismissed state from sessionStorage
+    // Persist dismiss state to sessionStorage so a page refresh doesn't
+    // re-show the banner the nurse already dismissed this visit
     colocatedDismissed = sessionStorage.getItem(`coloc_dismissed_${sid}`) === 'true';
 
     try {
@@ -30,6 +51,8 @@
     }
   });
 
+  // Guard: if insurance hasn't been captured yet, capture it before
+  // proceeding to provider selection
   function bookReferral(idx) {
     if (!state?.insurance) {
       goto(`/session/${sid}/insurance?next=${idx}`);
@@ -52,11 +75,15 @@
     sessionStorage.setItem(`coloc_dismissed_${sid}`, 'true');
   }
 
+  // Reactive derivations from state — recompute whenever state changes
   $: referrals = state?.patient?.referred_providers || [];
   $: bookings = state?.bookings || [];
+  // Build a Set of booked indexes for O(1) lookup in the template
   $: bookedIndexes = new Set(bookings.map(b => b.referral_index));
   $: allBooked = referrals.length > 0 && referrals.every((_, i) => bookedIndexes.has(i));
 
+  // chatContext is rebuilt whenever state or bookings change so the LLM always
+  // has a current picture of what's booked and what's pending
   $: chatContext = state ? [
     `Screen: Referrals Overview (Step 2)`,
     `Patient: ${state.patient?.name} | DOB: ${state.patient?.dob} | PCP: ${state.patient?.pcp}`,
@@ -112,6 +139,7 @@
         Following hospital discharge, the following appointments need booking:
       </p>
 
+      <!-- Colocated suggestion banner: shown once per session unless dismissed -->
       {#if colocatedSuggestions.length > 0 && !colocatedDismissed}
         {#each colocatedSuggestions as suggestion}
           <div style="margin-bottom:16px; padding:14px 16px; background:#eef2ff; border:1px solid #c7d2fe; border-radius:8px; display:flex; align-items:flex-start; gap:12px">
@@ -134,6 +162,7 @@
       {/if}
 
       {#each referrals as referral, idx}
+        <!-- highlighted class applied to booked cards (green border via CSS) -->
         <div class="provider-card" class:highlighted={bookedIndexes.has(idx)}>
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px">
             <div>

@@ -1,3 +1,18 @@
+<!--
+  Dashboard / Patient Lookup — the entry point of every care coordinator session.
+
+  User flow:
+    1. Nurse types a patient name/phone/email/ID → debounced search → dropdown
+    2. Nurse picks a patient → backend is checked for an existing session
+    3. Nurse checks the identity-verification checkbox (regulatory requirement)
+    4. Primary action button adapts to session state:
+         - No prior session  → "Confirm & Begin Booking" (creates new session)
+         - Session in progress → "Continue Session" (navigate to existing)
+         - Session complete    → "Review Completed Session" + "Start New Session"
+
+  The "Start New Session" path deletes the existing backend session before
+  creating a fresh one (only one session per patient is allowed at a time).
+-->
 <script>
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client.js';
@@ -16,6 +31,7 @@
   let identityVerified = false;
   let showNewSessionModal = false;
 
+  // Debounce search input to avoid hammering the API on every keystroke
   function onSearchInput() {
     clearTimeout(debounceTimer);
     selectedPatient = null;
@@ -40,6 +56,8 @@
   }
 
   // B1: session check happens immediately on patient pick
+  // Immediately check for an in-progress session so the CTA can adapt before
+  // the nurse clicks anything
   async function pickPatient(p) {
     selectedPatient = p;
     searchInput = p.name;
@@ -70,6 +88,8 @@
   }
 
   // B2: single action — create session, load patient, navigate
+  // Orchestrates the full session-start sequence atomically so the nurse
+  // can't end up with a half-initialised session
   async function confirmAndBegin() {
     if (!selectedPatient) return;
     loading = true;
@@ -105,6 +125,8 @@
     showNewSessionModal = false;
   }
 
+  // Small delay prevents the dropdown from closing before the mousedown
+  // on a dropdown item fires (blur fires before mousedown)
   function handleBlur() {
     setTimeout(() => { showDropdown = false; }, 150);
   }
@@ -198,7 +220,7 @@
       </div>
     {/if}
 
-    <!-- B4: mandatory identity verification checkbox -->
+    <!-- B4: mandatory identity verification checkbox — must be checked before proceeding -->
     {#if selectedPatient}
       <div style="margin-top:12px; display:flex; align-items:center; gap:8px">
         <input

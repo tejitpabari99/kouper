@@ -1,3 +1,20 @@
+<!--
+  Schedule Appointment — Step 5 of the referral booking flow.
+
+  Displays available appointment slots grouped by week in collapsible panels.
+  The nurse picks a time slot; it is persisted to sessionStorage so that
+  navigating back and forward preserves the selection.
+
+  Key behaviours:
+    - Slots are fetched from the backend (which may call an external scheduling
+      API or return mock data depending on the environment)
+    - Slots are grouped by week, then further bucketed by day for display
+    - The first week is auto-expanded on load
+    - Selected slot is stored in sessionStorage keyed by session + referral index
+      so the confirm page can read it if the nurse revisits this step
+    - Provider/location/specialty are passed through query params to maintain
+      a clean navigation chain back to the overview
+-->
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -26,7 +43,7 @@
       error = e.message;
     }
 
-    // Check sessionStorage for previously selected slot
+    // Restore a previously selected slot if the nurse navigated away and back
     const cached = sessionStorage.getItem(`slot_${sid}_${idx}`);
     if (cached) {
       try { selectedSlot = JSON.parse(cached); } catch(_) {}
@@ -35,7 +52,7 @@
     try {
       const data = await api.getAppointmentSlots(sid, providerName, location);
       slotGroups = data.slots_by_week || [];
-      // Auto-open the first week
+      // Auto-open the first week so the nurse sees slots immediately
       if (slotGroups.length > 0) {
         openWeeks = { 0: true };
       }
@@ -46,6 +63,7 @@
     }
   });
 
+  // Group a week's flat slot array into { dayKey: slots[] } for day-level headers
   function slotsByDay(group) {
     return Object.entries(group.slots.reduce((acc, s) => {
       const key = s.date + '|' + s.day_name;
@@ -57,6 +75,7 @@
 
   function selectSlot(slot) {
     selectedSlot = slot;
+    // Persist so the confirm page can read the datetime without re-fetching
     sessionStorage.setItem(`slot_${sid}_${idx}`, JSON.stringify(slot));
   }
 
@@ -70,6 +89,7 @@
       provider: providerName,
       location,
       specialty,
+      // ISO-ish datetime string passed through to the confirm page
       scheduled_datetime: selectedSlot.date + 'T' + selectedSlot.start_time + ':00',
     });
     goto(`/session/${sid}/referral/${idx}/preferences?${params}`);
@@ -97,6 +117,7 @@
 
   {#if error}<div class="error-msg">{error}</div>{/if}
 
+  <!-- Sticky selection summary shown once a slot is picked -->
   {#if selectedSlot}
     <div style="padding:12px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center">
       <div>
@@ -117,6 +138,7 @@
       No available slots found in the next 3 weeks. The office will contact the patient to schedule.
     </div>
   {:else}
+    <!-- Collapsible week panels with time-slot buttons -->
     {#each slotGroups as group, wi}
       <div class="card" style="margin-bottom:10px; padding:12px 14px">
         <button

@@ -1,3 +1,24 @@
+<!--
+  Booking Confirmation — Step 6 (final referral step) of the booking flow.
+
+  The nurse reviews the full booking summary and clicks "Confirm Booking" to
+  write the booking record to the backend. After confirmation, a star-rating
+  feedback widget replaces the action buttons.
+
+  Key behaviours:
+    - Appointment info is loaded from sessionStorage (cached by Step 3) so no
+      extra API call is needed on this screen
+    - If the patient's insurance is not accepted, a mandatory acknowledgement
+      checkbox blocks confirmation until the nurse records they informed the
+      patient of the self-pay rate
+    - nurseNotes is a free-text field for internal care record entries — it is
+      NOT shown to the patient
+    - Post-booking feedback (1–5 stars + optional comment) is optional; the
+      nurse can skip it and go straight back to the overview
+    - After confirmation, navigation back to the referrals overview happens only
+      after the nurse either submits feedback or clicks Skip, so the flow stays
+      linear
+-->
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -17,12 +38,12 @@
   let confirming = false;
   let error = '';
   let apptInfo = null;
-  let scriptOpen = true;
+  let scriptOpen = true;   // Patient script panel starts expanded
   let nurseNotes = '';
   let insuranceInfo = null;
   let insuranceAcknowledged = false;
 
-  // Post-booking feedback
+  // Post-booking feedback state
   let bookingConfirmed = false;
   let feedbackRating = 0;
   let feedbackComment = '';
@@ -46,7 +67,7 @@
 
     api.logNurseEvent(sid, 'step_visited', { step: 'booking_confirmation', referral_index: idx });
 
-    // Load cached appointment info
+    // Prefer sessionStorage cache to avoid an extra round-trip on this page
     const cacheKey = `appointment_info_${sid}_${idx}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
@@ -61,11 +82,13 @@
     await loadInsuranceForConfirm();
   });
 
+  // Patient preferences loaded from session state for the Follow-Up Plan card
   $: prefs = state?.patient_preferences;
 
   async function confirmBooking() {
     confirming = true;
     error = '';
+    // Require explicit acknowledgement when insurance doesn't cover this provider
     if (insuranceInfo?.accepted === false && !insuranceAcknowledged) {
       error = 'Please confirm the patient has been informed of the self-pay rate before proceeding.';
       confirming = false;
@@ -180,6 +203,7 @@
     </div>
   {/if}
 
+  <!-- Collapsible scripted language panel — what the nurse should tell the patient -->
   <div class="card" style="border-left:4px solid #4f46e5">
     <button type="button" style="background:none;border:none;font-size:14px;font-weight:600;color:#4f46e5;cursor:pointer;padding:0;display:flex;align-items:center;gap:6px;width:100%;text-align:left" on:click={() => scriptOpen = !scriptOpen}>
       💬 What to Tell the Patient {scriptOpen ? '▾' : '▸'}
@@ -207,6 +231,7 @@
     </div>
   </div>
 
+  <!-- Insurance non-coverage gate: blocks confirm until the nurse acknowledges -->
   {#if insuranceInfo?.accepted === false}
     <div class="card" style="border-left:4px solid #ef4444">
       <div style="color:#dc2626; font-size:14px; font-weight:600; margin-bottom:8px">⚠ Insurance Not Covered</div>
@@ -221,7 +246,7 @@
   {/if}
 
   {#if bookingConfirmed}
-    <!-- Post-booking feedback form -->
+    <!-- Post-booking feedback form replaces the action buttons after confirmation -->
     <div class="card" style="border-left:4px solid #16a34a">
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
         <span style="color:#16a34a; font-size:20px">✓</span>

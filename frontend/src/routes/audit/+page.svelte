@@ -1,3 +1,23 @@
+<!--
+  Audit Log — read-only diagnostic view of all system activity.
+
+  Accessible from the dashboard header. Shows every event recorded by the
+  backend: nurse actions, API calls, LLM interactions, tool calls, and system
+  events. Intended for supervisors, engineers, or demo walkthroughs.
+
+  Key behaviours:
+    - Entries are fetched directly via fetch (not the api client) to allow
+      fine-grained URL construction for the type filter query param
+    - Entries are reversed on load so newest appear first
+    - TYPE_COLORS maps each event type to a colour scheme for visual scanning
+    - Each entry can be expanded to reveal raw JSON payloads (tool input/output,
+      detail, HTTP path) for debugging
+    - `reasoning_hint` is a special field populated by LLM tool calls — shows
+      the model's chain-of-thought inline, which is useful for interviews to
+      demonstrate that LLM reasoning is being logged
+    - n (entry limit) and typeFilter are both reactive: changing either
+      triggers a fresh loadLog() call
+-->
 <script>
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -6,10 +26,11 @@
   let entries = [];
   let loading = true;
   let error = '';
-  let expanded = {};
-  let n = 100;
+  let expanded = {};  // { entryIndex: bool } for expand/collapse state
+  let n = 100;        // Number of entries to load; bound to select
   let typeFilter = '';
 
+  // Visual styling per event type — used for both filter chips and entry rows
   const TYPE_COLORS = {
     api:    { bg: '#f3f4f6', border: '#9ca3af',  text: '#374151',  label: 'API'    },
     system: { bg: '#eff6ff', border: '#93c5fd',  text: '#1d4ed8',  label: 'System' },
@@ -24,10 +45,12 @@
     loading = true;
     error = '';
     try {
+      // Build URL manually to support an optional type filter param
       const url = `/api/audit/log?n=${n}${typeFilter ? '&type=' + typeFilter : ''}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
+      // Reverse so newest entries appear at the top
       entries = [...data].reverse();
     } catch (e) {
       error = e.message;
@@ -36,6 +59,7 @@
     }
   }
 
+  // Re-fetch when the filter chip changes
   function setFilter(t) {
     typeFilter = t;
     loadLog();
@@ -49,6 +73,7 @@
     try { return new Date(ts).toLocaleString(); } catch (_) { return ts; }
   }
 
+  // Truncate session UUIDs for display to keep rows compact
   function shortSession(id) {
     return id ? id.slice(0, 8) + '…' : '—';
   }
@@ -57,6 +82,7 @@
     return TYPE_COLORS[type] || TYPE_COLORS.api;
   }
 
+  // Derive a human-readable title from whichever field is most informative
   function entryTitle(entry) {
     if (entry.action) return entry.action.replace(/_/g, ' ');
     if (entry.tool_name) return entry.tool_name;
@@ -74,7 +100,7 @@
     <button class="btn btn-secondary" style="font-size:13px; margin-top:4px" on:click={() => goto('/')}>← Back</button>
   </div>
 
-  <!-- Type filter tabs -->
+  <!-- Type filter tabs — each maps to a backend event type -->
   <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px">
     {#each [['', 'All'], ['api', 'API'], ['system', 'System'], ['llm', 'LLM'], ['tool', 'Tool'], ['nurse', 'Nurse']] as [val, label]}
       {@const color = val ? entryColor(val) : null}
@@ -84,6 +110,7 @@
       >{label}</button>
     {/each}
     <div style="margin-left:auto; display:flex; gap:8px; align-items:center">
+      <!-- n changes trigger loadLog via on:change -->
       <select bind:value={n} on:change={loadLog} style="font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px">
         {#each [50, 100, 250, 500] as v}<option value={v}>{v} entries</option>{/each}
       </select>
@@ -103,6 +130,7 @@
   {:else}
     {#each entries as entry, i}
       {@const c = entryColor(entry.type)}
+      <!-- Error entries get a red left border regardless of their type colour -->
       <div style="margin-bottom:8px; padding:10px 14px; border-radius:8px; border:1px solid {c.border}; background:{c.bg}; border-left:4px solid {entry.error ? '#ef4444' : c.border}">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px">
           <div style="flex:1; min-width:0">
@@ -124,6 +152,7 @@
               {#if entry.session_id} · session: {shortSession(entry.session_id)}{/if}
             </div>
             {#if entry.reasoning_hint}
+              <!-- LLM chain-of-thought excerpt — key demo talking point -->
               <div style="margin-top:5px; font-size:12px; color:#4338ca; background:#eef2ff; border-radius:4px; padding:5px 8px; border-left:3px solid #a5b4fc; font-style:italic">"{entry.reasoning_hint.length > 180 ? entry.reasoning_hint.slice(0, 180) + '…' : entry.reasoning_hint}"</div>
             {/if}
           </div>
@@ -134,6 +163,7 @@
           {/if}
         </div>
 
+        <!-- Expanded payload: shows raw JSON for tool input/output and detail fields -->
         {#if expanded[i]}
           <div style="margin-top:8px; padding-top:8px; border-top:1px solid {c.border}40">
             {#if entry.detail}

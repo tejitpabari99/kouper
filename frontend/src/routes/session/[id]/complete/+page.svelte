@@ -1,3 +1,23 @@
+<!--
+  Session Complete — Step 7, the final screen of a session.
+
+  Shown after the nurse clicks "Complete Session" on the Referrals Overview.
+  Displays a full summary of every confirmed booking and offers:
+    1. Post-appointment outcome logging (per booking, lazy form)
+    2. Scheduled reminder touchpoints (collapsible, loaded on demand)
+    3. Send summary to patient via text or email
+    4. Print-friendly layout (print CSS hides all buttons)
+
+  Key design decisions:
+    - Outcome forms use a spread-clone pattern for reactive updates:
+        `outcomeForm = { ...outcomeForm, [idx]: { ...f, field: val } }`
+      because Svelte only tracks top-level store/object mutations, not deep
+      property assignments
+    - Reminders are loaded lazily on panel expand to avoid an unnecessary
+      API call when the nurse just wants to print and leave
+    - Each booking has its own independent outcome save state (saving/saved/error)
+      keyed by referral_index so one save doesn't block others
+-->
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -17,6 +37,7 @@
   let remindersLoaded = false;
 
   // A3: outcome logging per booking
+  // Each object is keyed by referral_index for independent per-booking state
   let outcomeOpen = {};       // { referral_index: bool }
   let outcomeForm = {};       // { referral_index: { date, status, notes } }
   let outcomeSaving = {};     // { referral_index: bool }
@@ -25,6 +46,7 @@
 
   function toggleOutcome(idx) {
     outcomeOpen = { ...outcomeOpen, [idx]: !outcomeOpen[idx] };
+    // Initialise form defaults lazily on first open
     if (!outcomeForm[idx]) {
       outcomeForm = { ...outcomeForm, [idx]: { date: '', status: 'completed', notes: '' } };
     }
@@ -60,6 +82,7 @@
     }
   }
 
+  // Guard: only load reminders once even if the panel is toggled open/closed
   async function loadReminders() {
     if (remindersLoaded) return;
     remindersLoaded = true;
@@ -142,7 +165,7 @@
             </div>
           {/if}
 
-          <!-- A3: outcome logging -->
+          <!-- A3: outcome logging — inline form per booking for post-appointment tracking -->
           <div style="margin-top:12px; padding-top:12px; border-top:1px solid #e5e7eb">
             <div style="font-size:12px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px">Post-Appointment Outcome</div>
             {#if outcomeSaved[booking.referral_index]}
@@ -152,6 +175,7 @@
               <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px">
                 <div>
                   <label style="font-size:11px; color:#6b7280; display:block; margin-bottom:2px">Appointment Date</label>
+                  <!-- Spread-clone update pattern: Svelte won't detect deep mutations -->
                   <input
                     type="date"
                     value={outcomeForm[booking.referral_index]?.date || ''}
@@ -224,6 +248,7 @@
       </div>
     {/if}
 
+    <!-- Reminder touchpoints panel: loaded lazily on expand -->
     <div class="card">
       <button
         on:click={() => { remindersOpen = !remindersOpen; if (remindersOpen) loadReminders(); }}
@@ -311,6 +336,7 @@
 </div>
 
 <style>
+  /* Print view: hide all interactive elements, expand cards full width */
   @media print {
     :global(.screen > div:first-child) { display: block !important; }
     :global(button), :global(.nav-row) { display: none !important; }
