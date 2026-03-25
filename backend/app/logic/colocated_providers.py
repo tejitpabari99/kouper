@@ -1,3 +1,11 @@
+"""
+Co-location detection for same-day scheduling optimization.
+
+When a patient has multiple referrals, booking providers who share a physical
+location on the same day reduces patient travel burden.  This module identifies
+those opportunities by matching provider names against the PROVIDERS list and
+grouping by department (location).
+"""
 from typing import List, Dict, Tuple
 from collections import defaultdict
 from pydantic import BaseModel

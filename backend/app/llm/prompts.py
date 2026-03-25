@@ -1,8 +1,21 @@
+"""
+System prompt construction for the Care Coordinator LLM.
+
+The system prompt is rebuilt on every message to ensure the model always
+has fresh patient context, up-to-date session state (pending vs. completed
+referrals), and a complete provider + insurance reference it can reason over
+without hallucinating.
+"""
 from typing import Optional, Any
 from ..data.providers import PROVIDERS
 from ..data.insurance import ACCEPTED_INSURANCES, SELF_PAY_RATES
 
 def build_provider_directory() -> str:
+    """
+    Render the complete provider list as a formatted string for injection into
+    the system prompt.  Including this statically saves a tool call per turn
+    and lets the model reason about all providers simultaneously.
+    """
     lines = []
     for p in PROVIDERS:
         lines.append(f"- {p.last_name}, {p.first_name} {p.certification} | {p.specialty}")
@@ -11,7 +24,13 @@ def build_provider_directory() -> str:
     return "\n".join(lines)
 
 def build_session_state_section(session: Any) -> str:
-    """Build a ## Current Session State section from a BookingSession object or dict."""
+    """
+    Build a '## Current Session State' block that summarises booking progress.
+
+    Injecting this into the system prompt lets the model know exactly which
+    referrals are done vs. pending without needing a dedicated tool call.
+    Handles both BookingSession objects and plain dicts (serialized sessions).
+    """
     if session is None:
         return ""
 
@@ -57,6 +76,7 @@ def build_session_state_section(session: Any) -> str:
             )
         lines.append("")
 
+    # Compute pending referrals by subtracting booked indices from the full list.
     pending = []
     for i, ref in enumerate(referred):
         booked_indices = []
@@ -81,6 +101,27 @@ def build_session_state_section(session: Any) -> str:
 
 
 def build_system_prompt(patient_context: Optional[str] = None, session: Any = None) -> str:
+    """
+    Assemble the full system prompt for a care coordinator conversation turn.
+
+    The prompt is structured as a reference document the model can scan:
+    - Provider directory: all specialists with locations and hours
+    - Appointment rules: NEW vs. ESTABLISHED criteria
+    - Insurance and self-pay data: accepted plans and fallback rates
+    - Role instructions: keep the model focused on the nurse's workflow
+    - Co-location tip: a hard-coded scheduling optimization for two providers
+      who share a location (Jefferson Hospital) and can be double-booked on the
+      same day to minimize patient trips
+    - Current patient context: the active patient's demographics and history
+    - Session state: which referrals are done and which are pending
+
+    Args:
+        patient_context: Pre-formatted patient summary string from build_patient_context().
+        session: BookingSession (or dict equivalent) for the current session.
+
+    Returns:
+        Complete system prompt string to pass to the Anthropic API.
+    """
     insurances = "\n".join(f"- {ins}" for ins in ACCEPTED_INSURANCES)
     rates = "\n".join(f"- {spec}: ${rate:.0f}" for spec, rate in SELF_PAY_RATES.items())
     context = patient_context or "No patient loaded yet."
@@ -123,6 +164,13 @@ Offer the most helpful next step: suggest retrying, trying an alternative provid
     return prompt
 
 def build_patient_context(patient: Optional[dict]) -> str:
+    """
+    Format a patient dict into a compact summary string for the system prompt.
+
+    Pulls name, DOB, PCP, referred providers (with specialty), and full
+    appointment history including status — the model uses history to determine
+    appointment type and to flag no-show patterns.
+    """
     if not patient:
         return "No patient loaded."
     lines = [f"Patient: {patient.get('name')} | DOB: {patient.get('dob')} | PCP: {patient.get('pcp')}"]

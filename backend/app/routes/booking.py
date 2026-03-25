@@ -1,3 +1,14 @@
+"""
+Booking confirmation route — the core write operation of the care coordinator workflow.
+
+When the nurse confirms a booking, this route:
+  1. Looks up provider availability to attach location details (phone, address, hours)
+  2. Runs appointment type determination (NEW vs. ESTABLISHED) based on patient history
+  3. Creates a CompletedBooking record and adds it to the session
+  4. Generates three reminder records if patient preferences are on file
+  5. Advances the session step (to 'complete' if all referrals are booked, else back
+     to 'referrals_overview' for the next pending referral)
+"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -13,29 +24,35 @@ from ..audit_log import append_audit_entry, AuditLogEntry
 router = APIRouter(prefix="/session", tags=["booking"])
 
 class ConfirmBookingRequest(BaseModel):
-    referral_index: int
+    referral_index: int      # Which referral in the patient's referred_providers list
     provider_name: str
     specialty: str
     location_name: str
     nurse_notes: str = ""
-    scheduled_datetime: Optional[str] = None
+    scheduled_datetime: Optional[str] = None  # ISO datetime if a specific slot was selected
 
 @router.post("/{session_id}/confirm-booking")
 def confirm_booking(session_id: str, body: ConfirmBookingRequest):
+    """
+    Confirm a booking for one referral and persist it to the session.
+
+    Idempotent for the same referral_index — an existing booking for that
+    index is replaced, so re-submitting after a correction works correctly.
+    """
     session = store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     if not session.patient:
         raise HTTPException(status_code=400, detail="No patient loaded")
 
-    # Get availability for this provider to find location details
+    # Get availability for this provider to find location details (phone, address)
     try:
         avail = check_availability(body.provider_name)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     location = next((loc for loc in avail.locations if loc.department_name == body.location_name), None)
 
-    # Determine appointment type
+    # Determine appointment type from patient's appointment history
     patient = PatientData(**session.patient)
     appt_type = determine_appointment_type(patient, body.specialty)
 
@@ -55,18 +72,17 @@ def confirm_booking(session_id: str, body: ConfirmBookingRequest):
     if body.scheduled_datetime:
         booking.scheduled_date = body.scheduled_datetime
 
-    # Remove existing booking for this referral index if present
+    # Replace any existing booking for this referral index (allow re-booking)
     session.bookings = [b for b in session.bookings if b.referral_index != body.referral_index]
-    # Then append the new booking
     session.bookings.append(booking)
 
-    # Schedule reminders for this booking
+    # Generate queued reminder records if preferences are available
     if session.patient_preferences:
         patient_name = session.patient.get("name", "Patient") if session.patient else "Patient"
         new_reminders = schedule_reminders(booking, session.patient_preferences, patient_name)
         session.reminders.extend(new_reminders)
 
-    # Check if all referrals are booked
+    # Advance session step: complete if all referrals are booked
     total_referrals = len(session.patient.get("referred_providers", []))
     if len(session.bookings) >= total_referrals:
         session.step = "complete"
@@ -92,6 +108,7 @@ def confirm_booking(session_id: str, body: ConfirmBookingRequest):
 
 @router.get("/{session_id}/summary")
 def get_summary(session_id: str):
+    """Return a summary of the session suitable for the confirmation/handoff screen."""
     session = store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")

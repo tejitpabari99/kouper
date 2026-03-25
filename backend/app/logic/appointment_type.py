@@ -1,3 +1,13 @@
+"""
+Appointment type determination — NEW vs. ESTABLISHED patient logic.
+
+Business rule: a patient is ESTABLISHED for a specialty if they had a
+*completed* appointment with any provider of that specialty within the past
+5 years.  No-shows and cancellations do not count.
+
+NEW appointments: 30 minutes, patient arrives 30 minutes early.
+ESTABLISHED appointments: 15 minutes, patient arrives 10 minutes early.
+"""
 from datetime import date, datetime
 from typing import Optional, List
 
@@ -8,6 +18,7 @@ from app.data.providers import PROVIDERS
 # Cutoff: appointments within 1825 days (5 years) count as ESTABLISHED
 ESTABLISHED_WINDOW_DAYS = 1825
 
+# Hardcoded to match the project's simulated "today" date for deterministic results.
 TODAY = date(2026, 3, 24)
 
 

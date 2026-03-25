@@ -1,3 +1,15 @@
+"""
+Unified audit log for the care coordinator backend.
+
+Captures four event types in a single table:
+  - api:    every HTTP request (logged by the middleware in server.py)
+  - llm:    every LLM tool call with inputs, outputs, and reasoning context
+  - system: lifecycle events (session created, patient loaded, booking confirmed)
+  - nurse:  explicit UI actions reported by the frontend
+
+All writes are best-effort — failures are silently swallowed to ensure the
+audit layer never degrades the main request path.
+"""
 import json
 from typing import List, Literal, Optional
 from pydantic import BaseModel
@@ -5,18 +17,21 @@ from .database import get_db
 
 
 class AuditLogEntry(BaseModel):
+    """Schema for a single audit event.  Fields are populated based on event type."""
     timestamp: str
     type: Literal["api", "system", "llm", "tool", "nurse"] = "llm"
     session_id: Optional[str] = None
     actor: Optional[str] = None
     action: Optional[str] = None
     detail: Optional[dict] = None
+    # LLM tool call fields
     tool_name: Optional[str] = None
     tool_input: Optional[dict] = None
     tool_output: Optional[str] = None
-    reasoning_hint: Optional[str] = None
+    reasoning_hint: Optional[str] = None  # Text the model produced in the same turn as the tool call
     error: bool = False
     error_code: Optional[str] = None
+    # HTTP request fields (populated by api-type entries)
     http_method: Optional[str] = None
     http_path: Optional[str] = None
     http_status: Optional[int] = None

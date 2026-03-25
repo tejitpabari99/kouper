@@ -1,3 +1,10 @@
+"""
+Appointment outcome logging routes.
+
+Nurses report what actually happened at each appointment (completed, no-show,
+cancelled).  These records feed back into the appointment type logic for
+future sessions — a completed outcome extends the ESTABLISHED window.
+"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Literal

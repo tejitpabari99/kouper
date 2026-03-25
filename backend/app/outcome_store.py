@@ -1,5 +1,9 @@
 """
 Persistent store for appointment outcomes backed by SQLite.
+
+Outcome records are written by nurses after appointments occur and feed back
+into the appointment type logic — completed outcomes extend the ESTABLISHED
+window for a patient/specialty combination.
 """
 from typing import List
 from datetime import datetime
@@ -9,6 +13,7 @@ from .database import get_db
 
 
 def add_outcome(outcome: AppointmentOutcome) -> None:
+    """Insert a new appointment outcome record into the database."""
     data = outcome.model_dump()
     with get_db() as conn:
         conn.execute(
@@ -33,6 +38,7 @@ def add_outcome(outcome: AppointmentOutcome) -> None:
 
 
 def get_outcomes_for_patient(patient_id) -> List[dict]:
+    """Return all outcome records for a patient, newest first."""
     with get_db() as conn:
         rows = conn.execute(
             "SELECT * FROM outcomes WHERE patient_id = ? ORDER BY recorded_at DESC",
@@ -42,6 +48,7 @@ def get_outcomes_for_patient(patient_id) -> List[dict]:
 
 
 def get_all_outcomes() -> List[dict]:
+    """Return all outcome records across all patients, newest first."""
     with get_db() as conn:
         rows = conn.execute(
             "SELECT * FROM outcomes ORDER BY recorded_at DESC"

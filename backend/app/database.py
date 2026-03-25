@@ -1,6 +1,6 @@
 """
 SQLite database setup for Kouper Health Care Coordinator.
-Single .kouper.db file at the project root.
+Single .kouper.db file at the project root; no ORM — raw SQL via sqlite3.
 """
 import os
 import sqlite3
@@ -11,6 +11,12 @@ DB_PATH = os.path.join(os.path.dirname(__file__), '../../.kouper.db')
 
 @contextmanager
 def get_db():
+    """
+    Context manager that opens a SQLite connection and ensures it is closed
+    after use.  row_factory=sqlite3.Row enables column-name access on results
+    (row["session_id"] rather than row[0]).  Foreign key enforcement is
+    enabled per-connection since SQLite disables it by default.
+    """
     conn = sqlite3.connect(
         os.path.abspath(DB_PATH),
         check_same_thread=False,
@@ -24,6 +30,19 @@ def get_db():
 
 
 def init_db():
+    """
+    Create all tables if they do not already exist.  Safe to call on every
+    startup — IF NOT EXISTS prevents data loss on re-runs.
+
+    Tables:
+      sessions       — one row per nurse workflow session
+      bookings       — one row per confirmed referral booking (child of sessions)
+      reminders      — patient reminder records tied to a booking
+      audit_log      — unified log of API calls, LLM tool calls, and nurse actions
+      outcomes       — post-appointment outcome records (completed / no-show / cancelled)
+      feedback       — error reports and booking quality ratings from nurses
+      local_patients — patients created directly in the UI (not from the EHR API)
+    """
     with get_db() as conn:
         conn.executescript("""
 CREATE TABLE IF NOT EXISTS sessions (

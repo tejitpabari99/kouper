@@ -1,3 +1,12 @@
+"""
+Patient search and session-load routes.
+
+Provides two related capabilities:
+  1. /patients — search across both the external EHR API and locally-created
+     patients, merging results (EHR results first, then local fallback).
+  2. /session/{id}/start/{patient_id} — attach a patient record to an active
+     session, advancing the workflow to the referrals overview step.
+"""
 import json
 from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
@@ -12,6 +21,13 @@ router = APIRouter(tags=["patient"])
 
 @router.get("/patients")
 def search_patients_endpoint(q: str = Query(default="")):
+    """
+    Search patients by name across EHR API and local SQLite patients.
+
+    EHR results are fetched first; if the EHR API is unavailable, falls
+    through silently to local-only results.  Local patient IDs are offset
+    by LOCAL_PATIENT_ID_OFFSET to avoid collisions with EHR IDs.
+    """
     results = []
     try:
         results = search_patients(q)
@@ -49,6 +65,13 @@ router2 = APIRouter(prefix="/session", tags=["patient"])
 
 @router2.post("/{session_id}/start/{patient_id}")
 def start_session_with_patient(session_id: str, patient_id: int):
+    """
+    Load a patient from the EHR API into the session and advance to referrals_overview.
+
+    This is the step where the nurse selects a patient from search results
+    and begins the booking workflow.  The patient dict is stored in the session
+    so it's available to the LLM and all subsequent route handlers.
+    """
     session = store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")

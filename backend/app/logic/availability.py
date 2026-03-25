@@ -1,3 +1,10 @@
+"""
+Provider availability logic — parses hours strings into structured day/time data.
+
+Provider hours are stored as compact strings like "M-W 9am-5pm" or "Th-F 10am-4pm".
+This module parses those strings into lists of full weekday names and time ranges
+for display in the UI and for slot generation.
+"""
 from typing import List, Optional
 
 from app.models.appointment import AvailabilityResult, DepartmentAvailability

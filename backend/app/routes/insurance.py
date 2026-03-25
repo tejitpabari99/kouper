@@ -1,3 +1,11 @@
+"""
+Insurance check route for the care coordinator workflow.
+
+Provides a single endpoint that answers the full insurance question in one
+call: Is the insurance accepted?  If not, what's the self-pay rate and are
+there in-network alternatives?  Is prior authorization required?  Also
+generates a ready-to-read patient script the nurse can recite verbatim.
+"""
 from fastapi import APIRouter, HTTPException
 from ..session_store import store
 from ..logic.insurance import check_insurance, get_alternative_providers, check_prior_auth

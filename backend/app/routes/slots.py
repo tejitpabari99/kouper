@@ -1,3 +1,9 @@
+"""
+Appointment slot generation route.
+
+Returns a 3-week grid of available time slots for a provider/location
+combination, grouped by week, for display in the slot picker UI.
+"""
 from fastapi import APIRouter, HTTPException, Query
 from ..session_store import store
 from ..logic.slot_generator import generate_slots

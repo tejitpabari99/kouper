@@ -1,3 +1,11 @@
+"""
+Session lifecycle routes — create, read, delete, and query sessions.
+
+A session is the top-level container for a nurse's workflow: it holds the
+loaded patient, booking progress, conversation history, preferences, and
+scheduled reminders.  The frontend creates a session on page load and passes
+the session_id to all subsequent calls.
+"""
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 from ..session_store import store
@@ -8,6 +16,7 @@ router = APIRouter(prefix="/session", tags=["session"])
 
 @router.post("")
 def create_session():
+    """Create a new booking session and return its ID.  Audited for traceability."""
     session = store.create()
     append_audit_entry(AuditLogEntry(
         timestamp=datetime.utcnow().isoformat() + "Z",
@@ -19,6 +28,7 @@ def create_session():
 
 @router.get("/{session_id}/state")
 def get_session_state(session_id: str):
+    """Return the full session object including patient, bookings, and preferences."""
     session = store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -34,7 +44,14 @@ def get_session_by_patient(patient_id: int):
 
 @router.get("/{session_id}/colocated-suggestions")
 def get_colocated_suggestions(session_id: str):
-    """Return co-location suggestions for providers involved in this session's referrals."""
+    """
+    Identify providers in this session who share a physical location.
+
+    Aggregates provider names from both the patient's referral list and any
+    already-confirmed bookings, then runs colocation analysis.  The frontend
+    surfaces the result as a scheduling optimization tip (e.g. "Book both
+    appointments on the same day at Jefferson Hospital").
+    """
     session = store.get(session_id)
     if not session or not session.patient:
         return []
@@ -54,7 +71,13 @@ def get_colocated_suggestions(session_id: str):
 
 @router.post("/{session_id}/insurance")
 def set_insurance(session_id: str, body: dict):
-    """Save the patient's insurance to the session (nurse-entered, overrides EHR)."""
+    """
+    Save the patient's insurance to the session (nurse-entered, overrides EHR).
+
+    Insurance can come from the patient's EHR record or be corrected by the
+    nurse at booking time.  Session-level insurance takes precedence in all
+    downstream insurance checks.
+    """
     session = store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -74,6 +97,7 @@ def get_reminders(session_id: str):
 
 @router.delete("/{session_id}")
 def delete_session(session_id: str):
+    """Permanently delete a session and all its associated bookings/reminders."""
     deleted = store.delete(session_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Session not found")

@@ -1,3 +1,10 @@
+"""
+Audit log read and write routes.
+
+Exposes the audit log for inspection by admin tooling (/audit/log) and
+provides a write endpoint (/audit/event) for the frontend to log explicit
+nurse UI actions that aren't already captured by the HTTP middleware.
+"""
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional

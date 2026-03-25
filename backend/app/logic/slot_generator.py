@@ -1,3 +1,14 @@
+"""
+Appointment slot generator — produces a browsable grid of time slots.
+
+Given a provider and location, generates all available appointment start times
+across the next N weeks based on the provider's working days and hours.  Slots
+are grouped by week for display in the UI's slot picker component.
+
+Note: this is a purely computed schedule — there is no real availability/booking
+system behind it.  Slots represent when the provider *could* see patients based
+on their listed hours, not confirmed open slots.
+"""
 from datetime import date, timedelta
 from typing import List, Dict, Tuple
 from pydantic import BaseModel
@@ -26,6 +37,7 @@ class SlotGroup(BaseModel):
 
 
 def _parse_hour(time_str: str) -> int:
+    """Convert a 12-hour time string like '9am' or '5pm' to a 24-hour integer."""
     t = time_str.strip().lower()
     if t.endswith('am'):
         h = int(t[:-2])
@@ -37,6 +49,7 @@ def _parse_hour(time_str: str) -> int:
 
 
 def _fmt12(hour: int, minute: int) -> str:
+    """Format a 24-hour hour/minute pair as a 12-hour display string (e.g. '9:00 AM')."""
     p = "AM" if hour < 12 else "PM"
     h = hour % 12 or 12
     return f"{h}:{minute:02d} {p}"
@@ -48,6 +61,17 @@ def generate_slots(
     duration_minutes: int = 30,
     weeks_ahead: int = 3,
 ) -> List[SlotGroup]:
+    """
+    Generate appointment slots for a provider/location over the next N weeks.
+
+    Walks each day in the window and generates back-to-back slots of
+    duration_minutes from the provider's opening time to closing time.
+    Slots are grouped into SlotGroup objects keyed by calendar week with
+    human-readable labels ("This week", "Next week", or a date range).
+
+    Falls back to the provider's first department if location_name is not matched,
+    so the UI still gets results even with a loose location string.
+    """
     provider = _find_provider(provider_name)
     if not provider:
         return []

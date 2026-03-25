@@ -1,3 +1,13 @@
+"""
+Feedback collection routes for error reports and booking quality ratings.
+
+Two feedback types are supported:
+  - Error feedback: nurse-reported errors with an incident ID for support tracking
+  - Booking feedback: 1–5 star rating with comment after a booking is completed
+
+In production these would trigger notifications (PagerDuty/Slack for errors,
+email digest for booking quality).  Currently stored locally in SQLite.
+"""
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional

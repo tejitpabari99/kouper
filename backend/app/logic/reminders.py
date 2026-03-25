@@ -1,3 +1,10 @@
+"""
+Reminder generation logic for confirmed bookings.
+
+Generates three ReminderRecord objects per booking: a booking confirmation,
+a 48-hour reminder, and a day-of reminder.  Records are queued (not sent) —
+a background job or webhook integration would consume them in production.
+"""
 from datetime import datetime, date, timedelta
 from typing import List, Optional
 from ..models.session import CompletedBooking, PatientPreferences, ReminderRecord

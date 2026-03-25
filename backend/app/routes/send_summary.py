@@ -1,3 +1,10 @@
+"""
+Send booking summary route (stub).
+
+In production this would dispatch an SMS or email to the patient with their
+appointment details.  Currently returns a mock success response — the
+Twilio/SendGrid integration is not yet connected.
+"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from ..session_store import store

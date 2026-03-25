@@ -1,3 +1,10 @@
+"""
+Appointment info route — pre-fetches type and availability for the booking UI.
+
+The frontend calls this endpoint when the nurse selects a provider and
+specialty, combining appointment type determination and availability lookup
+into a single response to reduce round trips.
+"""
 from fastapi import APIRouter, HTTPException, Query
 from ..session_store import store
 from ..logic.appointment_type import determine_appointment_type

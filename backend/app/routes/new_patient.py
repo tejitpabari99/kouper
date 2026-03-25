@@ -1,3 +1,11 @@
+"""
+Routes for creating and loading locally-managed patients.
+
+The MLChallenge patient API is read-only; nurses who need to book appointments
+for patients not in that system can create them locally here.  Local patients
+are stored in the local_patients SQLite table and given IDs starting at
+LOCAL_PATIENT_ID_OFFSET to avoid collisions with EHR IDs.
+"""
 import json
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
@@ -10,7 +18,8 @@ from ..audit_log import append_audit_entry, AuditLogEntry
 
 router = APIRouter(tags=["new_patient"])
 
-LOCAL_PATIENT_ID_OFFSET = 10000  # avoid collisions with ML Challenge IDs
+# IDs below this threshold belong to the EHR system; local patients start here.
+LOCAL_PATIENT_ID_OFFSET = 10000
 
 
 class NewPatientRequest(BaseModel):
@@ -25,6 +34,14 @@ class NewPatientRequest(BaseModel):
 
 @router.post("/patients/local")
 def create_local_patient(body: NewPatientRequest):
+    """
+    Create a new patient record in the local SQLite database.
+
+    The EHR ID is generated as 'LOCAL-{patient_id}' after insert so it
+    incorporates the auto-incremented row ID.  referred_specialties are stored
+    as a JSON array and expanded into the referred_providers list format on read
+    to match the shape expected by the rest of the system.
+    """
     if not body.name.strip():
         raise HTTPException(status_code=400, detail="Patient name is required.")
     if not body.dob.strip():

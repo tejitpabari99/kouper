@@ -1,3 +1,9 @@
+"""
+Provider directory route — used by the frontend's provider browser.
+
+Returns the full provider list with parsed availability and insurance data.
+Supports filtering by specialty and fuzzy name search.
+"""
 from fastapi import APIRouter, Query
 from typing import Optional
 from ..data.providers import PROVIDERS

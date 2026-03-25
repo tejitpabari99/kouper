@@ -1,3 +1,10 @@
+"""
+Patient preference collection route.
+
+Preferences (contact method, language, transportation needs, etc.) are
+collected by the nurse during the booking workflow and stored on the session.
+They drive reminder generation and are surfaced in the booking summary.
+"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Literal

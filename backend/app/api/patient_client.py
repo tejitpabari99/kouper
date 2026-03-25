@@ -1,3 +1,11 @@
+"""
+HTTP client for the MLChallenge patient data API (Flask service).
+
+This is the integration point between the FastAPI backend and the external
+patient data source.  All calls raise typed exceptions (PatientNotFound,
+APIUnavailable) so callers can map them to appropriate HTTP responses or
+LLM tool error messages without inspecting raw exceptions.
+"""
 import httpx
 from typing import Optional
 import os
@@ -10,6 +18,10 @@ load_dotenv('/root/projects/kouper/.env')
 PATIENT_API_URL = os.getenv('PATIENT_API_URL', 'http://localhost:5000')
 
 def search_patients(q: str) -> list:
+    """
+    Search patients by name query string.  Returns raw JSON list from the API.
+    Raises APIUnavailable on any connection or HTTP error.
+    """
     url = f"{PATIENT_API_URL}/patients"
     try:
         with httpx.Client(timeout=10.0) as client:

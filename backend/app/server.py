@@ -1,3 +1,9 @@
+"""
+FastAPI application entry point for the Kouper Care Coordinator backend.
+
+Responsible for app instantiation, database initialization, CORS configuration,
+audit middleware, and registering all route modules.
+"""
 import time, re
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,10 +16,19 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Run schema migrations / table creation before any requests are handled.
 init_db()
 
 @app.middleware("http")
 async def audit_middleware(request: Request, call_next):
+    """
+    HTTP middleware that records every API call to the audit log.
+
+    Extracts the session_id from session-scoped URLs so audit entries can be
+    correlated with a specific care session. Skips recording requests to the
+    /audit endpoint itself to avoid infinite recursion. Failures are silently
+    swallowed — audit logging must never degrade the main request path.
+    """
     start = time.time()
     response = await call_next(request)
     try:
@@ -38,6 +53,8 @@ async def audit_middleware(request: Request, call_next):
         pass  # audit must never crash requests
     return response
 
+# Allow the SvelteKit dev server (5173), preview server (4173), and a generic
+# local port (3000). All methods and headers are permitted for local development.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:4173"],
@@ -46,6 +63,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Each router module owns a feature domain.  patient has two routers because
+# the search endpoint lives at /patients while the session-scoped load endpoint
+# lives at /session/{id}/start/{patient_id}.
 app.include_router(session.router)
 app.include_router(patient.router)
 app.include_router(patient.router2)

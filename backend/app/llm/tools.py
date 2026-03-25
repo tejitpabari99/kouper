@@ -1,3 +1,19 @@
+"""
+Tool definitions exposed to the LLM as function-calling capabilities.
+
+Each entry in TOOLS follows the Anthropic tool-use schema and maps to a
+concrete Python handler in tool_executor.py.  The description field is
+what the model reads to decide when and how to call each tool — wording
+matters for correct tool selection.
+"""
+
+# These five tools represent the core "skills" the assistant needs to guide
+# a nurse through the post-discharge referral booking workflow:
+#   lookup_patient  → identify the patient and load their EHR data
+#   get_providers   → find specialists for a referral
+#   check_availability  → know when/where a provider can see patients
+#   determine_appointment_type  → decide NEW vs ESTABLISHED (affects duration/arrival)
+#   check_insurance  → verify coverage and surface self-pay cost if rejected
 TOOLS = [
     {
         "name": "lookup_patient",
@@ -16,6 +32,9 @@ TOOLS = [
     },
     {
         "name": "determine_appointment_type",
+        # The model calls this before quoting appointment duration or arrival instructions.
+        # It uses the patient's appointment history (already in session context) to
+        # apply the 5-year ESTABLISHED rule without the model having to reason about it.
         "description": "Determine whether a patient needs a NEW or ESTABLISHED appointment for a given specialty based on their history.",
         "input_schema": {"type": "object", "properties": {"specialty": {"type": "string"}}, "required": ["specialty"]}
     },
