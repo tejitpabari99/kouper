@@ -12,3 +12,7 @@ node_modules/
 build/
 dist/
 frontend/.env
+
+.audit_log.jsonl
+.feedback.json
+.sessions.json
